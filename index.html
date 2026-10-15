@@ -76,6 +76,11 @@ body{margin:0;height:100%;background:#0E0A16;overflow:hidden;font-family:Nunito,
 .card h1.logo img{display:block;width:min(100%,330px);height:auto;margin:0 auto;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45));animation:logoBob 3.2s ease-in-out infinite}
 @keyframes logoBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion: reduce){.card h1.logo img{animation:none}}
+.storehead{margin:12px 0 6px!important}
+.stores{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.store{display:inline-flex;align-items:center;gap:9px;background:#000;color:#fff;text-decoration:none;border:2px solid #8a8299;border-radius:12px;padding:7px 15px 7px 12px;font:600 18px/1.05 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;text-align:left}
+.store small{display:block;font-size:10.5px;font-weight:500;letter-spacing:.2px;opacity:.9}
+.store .sico{font-size:24px;line-height:1;width:22px;text-align:center}
 .tag{font:16px "Lilita One",Impact,sans-serif!important;color:#FFE27A!important;margin:-4px 0 6px!important;letter-spacing:.3px}
 .deco{display:flex;justify-content:center;gap:18px;font-size:22px;margin-top:-4px}
 .deco span{display:inline-block;animation:bob 2.4s ease-in-out infinite}
@@ -3619,7 +3624,7 @@ function showMenu() {
       return `<button class="lv" data-i="${i}" ${locked ? 'disabled' : ''}>${locked ? '🔒' : ['🏫', '🏀', '🏈', '🚌', '🏘️', '🏠', '🚗', '🦁', '🛍️', '🌳'][i]}<small>${'★'.repeat(s)}${'☆'.repeat(3 - s)}</small><em>${l.name}</em></button>`;
     }).join('')}</div>
     <button class="btn" id="go">${progress.unlocked > 1 ? 'BACK TO SCHOOL' : 'ENTER THE SCHOOL'}</button>
-    ${window.__installEvt ? '<button class="btn alt" id="install">📲 INSTALL</button>' : (window.__isPWA && /iphone|ipad|ipod/i.test(navigator.userAgent) && !navigator.standalone ? '<p class="small">Play it like an app: tap <b>Share</b>, then <b>Add to Home Screen</b>.</p>' : '')}`;
+    ${window.__storeLinks ? storeLinks() : window.__installEvt ? '<button class="btn alt" id="install">📲 INSTALL</button>' : (window.__isPWA && /iphone|ipad|ipod/i.test(navigator.userAgent) && !navigator.standalone ? '<p class="small">Play it like an app: tap <b>Share</b>, then <b>Add to Home Screen</b>.</p>' : '')}`;
   overlay.classList.remove('hidden');
   card.querySelectorAll('.lv').forEach(b => b.addEventListener('click', () => startLevel(+b.dataset.i)));
   card.querySelectorAll('.hb').forEach(b => b.addEventListener('click', () => { progress.hero = b.dataset.hero; saveProgress(); card.querySelectorAll('.hb').forEach(o => o.classList.toggle('on', o === b)); }));
@@ -3631,6 +3636,12 @@ function showMenu() {
 }
 
 window.addEventListener('error', e => showFxError(e.error || e.message));
+function storeLinks() {
+  const ua = navigator.userAgent, ios = /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1), android = /android/i.test(ua);
+  const apple = '<a class="store" href="https://apps.apple.com/app/id6822975640" target="_blank" rel="noopener"><span class="sico">⬇</span><span><small>Download on the</small>App Store</span></a>';
+  const play = '<a class="store" href="https://play.google.com/store/apps/details?id=com.thumbthru.zombiebitenight" target="_blank" rel="noopener"><span class="sico">▶</span><span><small>Get it on</small>Google Play</span></a>';
+  return `<p class="small storehead">${ios || android ? 'Get the free app:' : 'Play it on your phone:'}</p><div class="stores">${ios ? apple : android ? play : apple + play}</div>`;
+}
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); window.__installEvt = e; if (state === 'menu') showMenu(); });
 window.addEventListener('appinstalled', () => { window.__installEvt = null; if (state === 'menu') showMenu(); });
 window.__zs = { killZombie, zLook, SOLID, zoneAt, makeWorld, step, LEVELS, loadMap, get grid() { return grid; }, get MW() { return MW; }, get MH() { return MH; }, renderMap: () => renderMap(), get mapCanvas() { return mapCanvas; }, grantPower, get W() { return W; }, get ZONE_TILES() { return ZONE_TILES; }, get GATES() { return GATES; }, get EXIT_OPEN() { return EXIT_OPEN; }, get MAP() { return MAP; } };
