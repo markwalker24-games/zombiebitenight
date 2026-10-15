@@ -91,7 +91,7 @@ body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:Nunit
 .btn.alt{background:linear-gradient(#3A2E55,#2A2142);color:var(--fg)}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
 .btn:focus-visible,.lv:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
-.howto{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px;margin:10px 0 4px;font-size:12px;font-weight:800;color:#D6CDE6}
+.howto{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 4px;font-size:14px;font-weight:800;color:#D6CDE6}
 .howto div{background:var(--panel2);border:2px solid #000;border-radius:12px;padding:8px 4px}
 .howto b{display:block;font-size:22px;margin-bottom:3px}
 .hero{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px 0 2px;font:800 13px Nunito,sans-serif;color:#D6CDE6}
@@ -3569,14 +3569,9 @@ function showMenu() {
     <div class="deco" aria-hidden="true"><span>🦇</span><span>🎃</span><span>🦇</span></div>
     <h1>ZOMBIE<span>Bite Night</span></h1>
     <p class="tag">The game where you rescue everybody from the zombies!</p>
-    <p>You stayed late for detention on the spookiest night of the year. Fight your way out room by room: through the school, the locker room and gym, across the football field, and through the parking lot, home to your family, then drive across town through the zoo, the mall and the park. Save every survivor you can.</p>
     <div class="howto">
       <div><b>🕹️</b>${touch ? 'Left thumb: walk' : 'WASD: walk'}</div>
       <div><b>🎯</b>${touch ? 'Right thumb: aim and fire' : 'Hold mouse: aim and fire'}</div>
-      <div><b>🚪</b>The exit unlocks when every kid is found</div>
-      <div><b>🙋</b>Find survivors. They follow you to the exit</div>
-      <div><b>🎒</b>Zombies drop ammo and snacks</div>
-      <div><b>🧯</b>Find new weapons along the way</div>
     </div>
     <div class="hero"><span>Play as</span>
       <button class="hb ${progress.hero !== 'girl' ? 'on' : ''}" data-hero="boy">👦 Boy</button>
