@@ -743,8 +743,14 @@ function collides(x, y, r) {
   return false;
 }
 function slide(e, dx, dy, r) {
-  if (!collides(e.x + dx, e.y, r)) e.x += dx;
-  if (!collides(e.x, e.y + dy, r)) e.y += dy;
+  // big shoves (knockback, explosions) move in small steps so nothing can be pushed through a wall
+  const n = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / 6)), sx = dx / n, sy = dy / n;
+  for (let i = 0; i < n; i++) {
+    let moved = false;
+    if (!collides(e.x + sx, e.y, r)) { e.x += sx; moved = true; }
+    if (!collides(e.x, e.y + sy, r)) { e.y += sy; moved = true; }
+    if (!moved) break;
+  }
 }
 function los(x0, y0, x1, y1) {
   const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 10);
@@ -1090,9 +1096,10 @@ function janitorThink(w, z, dt, d, dx, dy, pace) {
   m.ph = 'idle'; return false;
 }
 function mopWhap(w, z, a) {
-  const me = w.me;
-  if (hurtMe(w, 1, z.x, z.y, z, 'mop')) slide(me, Math.cos(a) * 58, Math.sin(a) * 58, P_R);
+  const me = w.me, x0 = me.x, y0 = me.y, room = zoneAt(me.x, me.y);
+  if (hurtMe(w, 1, z.x, z.y, z, 'mop')) slide(me, Math.cos(a) * 44, Math.sin(a) * 44, P_R);
   else slide(me, Math.cos(a) * 28, Math.sin(a) * 28, P_R);
+  if (zoneAt(me.x, me.y) !== room) { me.x = x0; me.y = y0; }   // the mop never knocks you out of the room
   w.events.push({ e: 'mopHit', x: me.x, y: me.y });
 }
 function addPuddle(w, x, y) {
