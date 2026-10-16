@@ -121,6 +121,7 @@ body{margin:0;height:100%;background:#0E0A16;overflow:hidden;font-family:Nunito,
 .hb.on{background:var(--slime);color:var(--ink)}
 .hb:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .lvgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:14px 0 6px}
+.lvgrid .lv:last-child:nth-child(odd){grid-column:1/-1;justify-self:center;width:calc(50% - 5px)}
 .lv{background:linear-gradient(#3A2E55,#2A2142);border:3px solid #000;border-radius:14px;box-shadow:0 3px 0 #000,inset 0 2px 0 rgba(255,255,255,.07);color:var(--fg);padding:9px 4px 7px;font:22px "Lilita One",Impact,sans-serif;cursor:pointer;transition:transform .12s,box-shadow .12s}
 .lv:not([disabled]):hover{transform:translateY(-2px);box-shadow:0 5px 0 #000,0 0 14px rgba(242,140,40,.25),inset 0 2px 0 rgba(255,255,255,.07)}
 .lv small{display:block;font-size:13px;color:var(--gold);letter-spacing:1px;margin-top:2px}
@@ -163,8 +164,8 @@ body{margin:0;height:100%;background:#0E0A16;overflow:hidden;font-family:Nunito,
             Q car  U bus  O light pole  H fence  Y goalpost  N scoreboard  y tree  % barrel (explodes)  u toilet
    ===================================================================== */
 const TS = 32;
-const SOLID = new Set('#DWTSBLbKVFXePhZpQUOHYNy%u123456789^&~jn'.split(''));
-const BULLET_SOLID = new Set('#SVFQULONyP%123456789^&'.split(''));
+const SOLID = new Set('#DWTSBLbKVFXePhZpQUOHYNy%u123456789^&~jni'.split(''));
+const BULLET_SOLID = new Set('#SVFQULONyP%123456789^&i'.split(''));
 const OBJECT_GROUPS = new Set('WTSBLbKFXPZQUN&'.split(''));
 let MW, MH, grid, MAP, EXIT_OPEN = false;
 
@@ -552,7 +553,56 @@ function buildParkMap() {
       { name: 'THE BANDSTAND', zombies: { walker: 3 }, survivors: [[32, 1]], pickups: [['ammo', 1, 12], ['health', 32, 12]] }
     ] };
 }
-const MAP_BUILDERS = { school: buildSchoolMap, gym: buildGymMap, field: buildFieldMap, parking: buildParkingMap, street: buildStreetMap, house: buildHouseMap, drive: buildDriveMap, zoo: buildZooMap, mall: buildMallMap, park: buildParkMap };
+function buildGraveyardMap() {
+  // an old cemetery that winds up to a haunted chapel. Stone walls split it into rooms, rows of tombstones act as walls.
+  const g = blankMap(34, 80, 'G'), { rect, put } = mk(g);
+  rect(0, 0, 33, 0, '#'); rect(0, 79, 33, 79, '#'); rect(0, 0, 0, 79, '#'); rect(33, 0, 33, 79, '#');
+  const graves = (x0, x1, y, gaps = []) => { for (let x = x0; x <= x1; x++) if (!gaps.some(([a, b]) => x >= a && x <= b)) put(x, y, 'i'); };
+  // CEMETERY GATE (y 62-78): a dirt path from the front gate, a small crypt and scattered graves
+  rect(15, 70, 18, 78, 'M'); rect(10, 66, 18, 69, 'M'); rect(10, 62, 13, 65, 'M');
+  rect(3, 64, 7, 66, '&');                                   // a small crypt
+  for (const [x, y] of [[22, 64], [24, 64], [26, 64], [22, 67], [24, 67], [26, 67], [28, 70], [3, 73], [5, 73], [7, 73], [25, 74], [27, 74]]) put(x, y, 'i');
+  for (const [x, y] of [[9, 75], [30, 63], [2, 69], [21, 72]]) put(x, y, 'y');
+  rect(0, 61, 33, 61, '#'); rect(10, 61, 13, 61, '1');
+  // OLD GRAVES (y 46-60): rows of tombstones to wind between
+  graves(1, 32, 57, [[6, 7], [25, 26]]);
+  graves(1, 32, 53, [[15, 17]]);
+  graves(1, 32, 49, [[2, 3], [29, 30]]);
+  for (const [x, y] of [[12, 59], [20, 59], [8, 55], [27, 55], [4, 51], [22, 51], [12, 47], [24, 47]]) put(x, y, 'y');
+  rect(0, 45, 33, 45, '#'); rect(2, 45, 5, 45, '2');
+  // MAUSOLEUM ROW (y 30-44): a great tomb in the middle, smaller crypts around it. Go around either side.
+  rect(11, 33, 22, 40, '&');                                 // the great tomb
+  rect(1, 35, 5, 37, '&'); rect(28, 35, 32, 37, '&');        // side crypts
+  rect(7, 42, 9, 43, '&'); rect(24, 42, 26, 43, '&');
+  for (const [x, y] of [[3, 41], [5, 41], [28, 40], [30, 40], [8, 31], [25, 31], [14, 42], [19, 42], [2, 32], [31, 32]]) put(x, y, 'i');
+  for (const [x, y] of [[9, 38], [24, 38], [16, 31]]) put(x, y, 'y');
+  rect(0, 29, 33, 29, '#'); rect(15, 29, 18, 29, '3');
+  // THE CHURCHYARD (y 21-28): graves and old trees in front of the chapel doors
+  graves(3, 12, 25); graves(21, 30, 25);
+  for (const [x, y] of [[2, 22], [31, 22], [8, 27], [25, 27]]) put(x, y, 'y');
+  rect(15, 21, 18, 28, 'M');
+  // THE CHAPEL (y 1-19): thick stone walls, a red carpet up the aisle, pews, pillars, the altar and an old organ
+  rect(0, 0, 33, 20, '#'); rect(5, 1, 28, 19, ',');
+  rect(15, 2, 18, 19, 'o');
+  for (const y of [12, 14, 16]) { rect(7, y, 13, y, 'b'); rect(20, y, 26, y, 'b'); }
+  for (const [x, y] of [[9, 5], [24, 5], [9, 9], [24, 9]]) put(x, y, '#');   // stone pillars
+  rect(13, 3, 20, 3, 'F');                                   // the altar
+  rect(6, 2, 7, 3, 'P');                                     // the organ
+  rect(15, 20, 18, 20, '4');                                 // chapel doors
+  rect(15, 0, 18, 0, '^');                                   // out the back
+  const lights = [[16, 76, 160], [12, 64, 150], [20, 59, 140], [6, 51, 140], [27, 47, 140], [16, 43, 150], [3, 33, 140], [30, 33, 140], [16, 23, 170], [11, 4, 120], [22, 4, 120], [16, 10, 140], [8, 17, 110], [25, 17, 110]];
+  for (const [x, y] of [[19, 76], [14, 70], [6, 59], [27, 59], [16, 47], [1, 39], [32, 39], [13, 22], [20, 22]]) put(x, y, 'O');
+  return { id: 'graveyard', name: 'The Haunted Church', grid: g, start: [16, 77], dark: 0.88, lights, boss: ['skelking'],
+    zones: [
+      { name: 'CEMETERY GATE', zombies: { walker: 5, ghost: 1 }, survivors: [[3, 70]], pickups: [['ammo', 29, 66]] },
+      { name: 'OLD GRAVES', zombies: { walker: 5, runner: 2, skeleton: 3 }, spawns: [['crawler', 10, 55], ['crawler', 20, 51]], survivors: [[31, 47]], pickups: [['health', 1, 59]] },
+      { name: 'MAUSOLEUM ROW', zombies: { walker: 4, ghost: 2, pumpkin: 1, skeleton: 3 }, survivors: [[1, 31]], powers: [[30, 43]], pickups: [['ammo', 16, 44]] },
+      { name: 'THE CHURCHYARD', zombies: { walker: 3, runner: 2, skeleton: 4, cheer: 1 }, survivors: [[32, 22]], pickups: [['health', 1, 23], ['ammo', 32, 27]] },
+      { name: 'THE CHAPEL', zombies: { walker: 2 }, pickups: [['health', 6, 18], ['ammo', 27, 18]], powers: [[16, 17]] }
+    ] };
+}
+
+const MAP_BUILDERS = { school: buildSchoolMap, gym: buildGymMap, field: buildFieldMap, parking: buildParkingMap, street: buildStreetMap, house: buildHouseMap, drive: buildDriveMap, zoo: buildZooMap, mall: buildMallMap, park: buildParkMap, graveyard: buildGraveyardMap };
 let ZONE_OF = null, ZONE_TILES = [], GATES = [];
 function loadMap(id) {
   MAP = MAP_BUILDERS[id]();
@@ -641,7 +691,9 @@ const LEVELS = [
   { map: 'mall',    name: 'The Shopping Mall',   speed: 1.25, drop: 0.03,  seed: 113, boss: 1.35,
     hint: 'Cart Pushers block shots from the front. The Mall Cop waits in the arcade: smash machines for supplies!' },
   { map: 'park',    name: 'The City Park',       speed: 1.3,  drop: 0.03,  seed: 127, boss: 1.4,
-    hint: 'Last stop: the park. Watch the bushes, and listen for the ice cream jingle...' }
+    hint: 'Watch the bushes, and listen for the ice cream jingle...' },
+  { map: 'graveyard', name: 'The Haunted Church', speed: 1.3, drop: 0.03, seed: 139, boss: 1.45,
+    hint: 'The Skeleton King raises fast skeletons from the graves. Thin out his army, then go for the king!' }
 ];
 const ZT = {
   walker:  { r: 12, hp: 2, speed: 52, dmg: 1, color: '#7FB86A' },
@@ -653,7 +705,8 @@ const ZT = {
   cheer:   { r: 11, hp: 3, speed: 60, dmg: 1, color: '#9CC27A' },
   pumpkin: { r: 16, hp: 6, speed: 40, dmg: 1, color: '#8DB87C' },   // giant jack-o'-lantern costume: pops into three minis
   ghost:   { r: 11, hp: 3, speed: 64, dmg: 1, color: '#9CC27A' },   // bedsheet ghost: fades out, and shots pass through while it's faded
-  cart:    { r: 13, hp: 5, speed: 54, dmg: 1, color: '#8FB87A' },   // shopping cart pusher: the cart blocks shots from the front, then it charges
+  cart:    { r: 13, hp: 5, speed: 54, dmg: 1, color: '#8FB87A' },
+  skeleton: { r: 9, hp: 1, speed: 104, dmg: 1, color: '#EDE8D8' },  // fast, falls apart in one hit   // shopping cart pusher: the cart blocks shots from the front, then it charges
   janitor: { r: 22, hp: 45, speed: 58, dmg: 2, color: '#7FA86A', boss: 'THE JANITOR', sub: 'Strike when his mop is down!' },
   coach:   { r: 20, hp: 50, speed: 56, dmg: 2, color: '#86AE6E', boss: 'THE COACH', sub: 'Drop and give him twenty!' },
   driver:  { r: 27, hp: 60, speed: 40, dmg: 2, color: '#86A86A', boss: 'THE BUS DRIVER', sub: 'Last stop. Everybody off!' },
@@ -663,6 +716,7 @@ const ZT = {
   housekeeper: { r: 19, hp: 55, speed: 60, dmg: 2, color: '#86AE6E', boss: 'THE HOUSEKEEPER', sub: 'She JUST mopped in here.' },
   silverback:  { r: 24, hp: 100, speed: 78, dmg: 2, color: '#6E7A6A', boss: 'THE SILVERBACK', sub: 'When he pounds his chest, RUN!' },
   mallcop:     { r: 18, hp: 90, speed: 100, dmg: 2, color: '#86AE6E', boss: 'THE MALL COP', sub: 'He is fast. Use the arcade machines!' },
+  skelking:    { r: 22, hp: 110, speed: 60, dmg: 2, color: '#EDE8D8', boss: 'THE SKELETON KING', sub: 'He raises an army from the graves!' },
   icecream:    { r: 21, hp: 75, speed: 50, dmg: 2, color: '#86AE6E', boss: 'THE ICE CREAM MAN', sub: 'Brain freeze!' },
   // zombie animals
   lion:    { r: 13, hp: 3, speed: 112, dmg: 1, color: '#C9A24A', animal: true },
@@ -739,6 +793,7 @@ const ZOMBIE_TIPS = {
   cheer: 'Cheerleader! She backflips away from your shots. Keep shooting: after two flips she gets dizzy.',
   pumpkin: 'Pumpkin Head! When it pops, three little zombies spill out. Back up and pop it from far away.',
   ghost: 'Sheet Ghost! Shots go right through it while it fades. Fire when it turns solid.',
+  skeleton: 'Skeletons are fast, but fall apart in one hit. Back up while you fire!',
   cart: 'Cart Pusher! Its cart blocks shots from the front. Get around to the side, and dodge when it charges.'
 };
 const ALARM_R = 140;   // sprinklers only cover the area right around you
@@ -837,6 +892,7 @@ function killZombie(w, z) {
   if (z.dead) return;
   z.dead = true; w.kills++; w.events.push({ e: 'kill', z });
   if (z.type === 'pumpkin') { summonMinis(w, z, 3, 99); w.events.push({ e: 'pumpkinPop', z }); }
+  if (z.type === 'skeleton') w.events.push({ e: 'crumble', z });
   // every zombie is a student with a backpack: loot it
   const drop = (type, extra) => w.pickups.push({ type, x: z.x + rand(-8, 8), y: z.y + rand(-4, 8), taken: false, ttl: 22, ...extra });
   if (ZT[z.type].boss) { drop('ammo', { amount: 40 }); drop('health', { heal: 3 }); return; }
@@ -848,7 +904,7 @@ function killZombie(w, z) {
     if (N.health > 0.25) { drop('health', { heal: 1 }); drop(R() < N.health ? 'health' : 'ammo', { heal: 1, amount: 15 }); }
     else { drop('ammo', { amount: 25 }); if (R() < 0.3) drop('health', { heal: 1 }); }
   } else {
-    const base = { walker: 0.75, runner: 0.65, mini: 0.4, nerd: 0.8, crawler: 0.6, cheer: 0.8, pumpkin: 0.9, ghost: 0.75, cart: 0.85, lion: 0.7, monkey: 0.35, penguin: 0.35, dust: 0.25 }[z.type] || 0.6;
+    const base = { walker: 0.75, runner: 0.65, mini: 0.4, nerd: 0.8, crawler: 0.6, cheer: 0.8, pumpkin: 0.9, ghost: 0.75, cart: 0.85, skeleton: 0.4, lion: 0.7, monkey: 0.35, penguin: 0.35, dust: 0.25 }[z.type] || 0.6;
     // drop more often when you're in trouble, a bit less when you're cruising
     const need = Math.max(N.health, N.ammo), chance = Math.min(0.95, base * (0.6 + need * 0.7));
     if (R() < chance) {
@@ -1031,13 +1087,13 @@ function stepShots(w, dt) {
 /* ---------- bosses ---------- */
 function summonMinis(w, z, n, cap = 6, type = 'mini') {
   // never more than a handful of minis at once
-  n = Math.min(n, cap - w.zombies.filter(o => o.type === type && !o.dead).length);
+  n = Math.min(n, cap - w.zombies.filter(o => o.type === type && !o.dead && o.zone === z.zone).length);
   if (n <= 0) return;
   for (let i = 0; i < n; i++) {
     for (let tries = 0; tries < 8; tries++) {
       const a = rand(0, Math.PI * 2), d = z.r + 18 + rand(0, 20), x = z.x + Math.cos(a) * d, y = z.y + Math.sin(a) * d;
       if (collides(x, y, 8)) continue;
-      const m = makeZ(type, x, y, w.L.speed || 1, w.zombies.length + i, z.zone); m.aggro = 99; m.stun = 0.9; w.zombies.push(m);
+      const m = makeZ(type, x, y, w.L.speed || 1, w.zombies.length + i, z.zone); m.aggro = 99; m.stun = 0.9; if (type === 'skeleton') m.rise = 0.9; w.zombies.push(m);
       break;
     }
   }
@@ -1201,6 +1257,21 @@ function bossThink(w, z, dt) {
   } else if (z.type === 'silverback') {
     if (z.t2 <= 0) { z.t2 = 12 / pace; if (w.zombies.filter(o => o.type === 'monkey' && !o.dead).length <= 1) { summonMinis(w, z, 2, 3, 'monkey'); w.events.push({ e: 'bossYell', z, text: 'OOH OOH AAH AAH!' }); } }
     if (z.t3 <= 0) { z.t3 = rand(3.0, 3.6) / pace; if (d < 440) { startCharge('ROAAAR!'); z.windup = 1.0; w.events.push({ e: 'pound', z }); return true; } }
+  } else if (z.type === 'skelking') {
+    // the Skeleton King: raises waves of fast skeletons, hurls bones, and lunges when you get close
+    if (!z.raised) { z.raised = true; z.t2 = 0.8; }
+    if (z.t2 <= 0) {
+      z.t2 = 8 / pace;
+      if (w.zombies.filter(o => o.type === 'skeleton' && !o.dead && o.zone === z.zone).length <= 3) {
+        summonMinis(w, z, 3, 7, 'skeleton'); z.raiseT = w.t;
+        w.events.push({ e: 'bossYell', z, text: ['RISE, MY ARMY!', 'ARISE!', 'BONES, ATTACK!'][Math.floor(Math.random() * 3)] }); w.events.push({ e: 'raise', z });
+      }
+    }
+    if (z.t1 <= 0) {
+      z.t1 = rand(2.4, 3.0) / pace;
+      if (d < 400 && los(z.x, z.y - 8, me.x, me.y - 6)) { for (const off of [-0.3, 0, 0.3]) { const a = Math.atan2(dy, dx) + off; w.eshots.push({ kind: 'bone', x: z.x, y: z.y - 10, vx: Math.cos(a) * 240, vy: Math.sin(a) * 240, d: 0, spin: 0, range: 420, r: 7 }); } z.throwT = w.t; }
+    }
+    if (z.t3 <= 0) { z.t3 = rand(6, 8) / pace; if (d < 260) { startCharge('BONE ZONE!'); return true; } }
   } else if (z.type === 'mallcop') {
     if (z.t2 <= 0) { z.t2 = 13 / pace; if (!w.zombies.some(o => o.type === 'mini' && !o.dead)) { summonMinis(w, z, 2, 2); w.events.push({ e: 'bossYell', z, text: 'I NEED BACKUP!' }); } }
     if (z.t3 <= 0) { z.t3 = rand(3.0, 3.8) / pace; if (d < 380) { startCharge(['HALT!', 'FREEZE!', 'NO RUNNING!'][Math.floor(Math.random() * 3)]); z.windup = 0.75; return true; } }
@@ -1415,7 +1486,7 @@ function step(w, dt, move, aim) {
   stepSurvivors(w, dt);
   // zombies
   for (const z of w.zombies) {
-    z.anim += dt; if (z.hurt > 0) z.hurt -= dt; if (z.stun > 0) { z.stun -= dt; continue; }
+    z.anim += dt; if (z.hurt > 0) z.hurt -= dt; if (z.rise > 0) z.rise -= dt; if (z.stun > 0) { z.stun -= dt; continue; }
     if (z.flip > 0) {   // mid-backflip
       z.flip -= dt; slide(z, z.fvx * dt, z.fvy * dt, bodyR(z));
       if (z.flip <= 0 && z.flips <= 0) { z.stun = 1.2; z.dizzyUntil = w.t + 1.2; w.events.push({ e: 'dizzy', z }); }   // out of flips: lands dizzy
@@ -1975,7 +2046,14 @@ function drawBlock(c, b) {
         for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) { c.fillStyle = sn[(r + k + i) % 4]; c.fillRect(vx + 6 + k * 4, Y + 6 + r * 6, 3, 4); }
         c.fillStyle = '#7FE07F'; c.fillRect(vx + 22, Y + 6, 3, 3); }
       break;
-    case 'F': shadow(); rr(c, X + 1, Y + 3, Wd - 2, Ht - 6, 4); c.fillStyle = '#8F9BA6'; c.fill(); c.stroke(); c.fillStyle = '#C3CCD6'; c.fillRect(X + 3, Y + 5, Wd - 6, 8);
+    case 'F': if (MAP.id === 'graveyard') {
+        shadow(); rr(c, X + 1, Y + 3, Wd - 2, Ht - 6, 3); c.fillStyle = '#8E8A99'; c.fill(); c.stroke();
+        c.fillStyle = '#F2EEE4'; c.fillRect(X + 6, Y + 5, Wd - 12, Ht - 12); c.fillStyle = '#7A2A4A'; c.fillRect(X + Wd / 2 - 18, Y + 5, 36, Ht - 12);
+        c.fillStyle = '#F2C230'; rr(c, X + Wd / 2 - 4, Y + 6, 8, 12, 1); c.fill(); c.stroke();
+        for (let i = 0; i < b.w; i++) { const cx = X + 10 + i * TS; c.fillStyle = '#F4F1E6'; c.fillRect(cx - 2, Y + 8, 4, 10); c.strokeRect(cx - 2, Y + 8, 4, 10); c.fillStyle = '#FFD34A'; c.beginPath(); c.ellipse(cx, Y + 5, 2, 3.5, 0, 0, Math.PI * 2); c.fill(); }
+        break;
+      }
+      shadow(); rr(c, X + 1, Y + 3, Wd - 2, Ht - 6, 4); c.fillStyle = '#8F9BA6'; c.fill(); c.stroke(); c.fillStyle = '#C3CCD6'; c.fillRect(X + 3, Y + 5, Wd - 6, 8);
       if (floorUnder(b.x, b.y) === 'l') { for (let i = 0; i < b.w; i++) { c.fillStyle = '#F4F1E6'; c.beginPath(); c.ellipse(X + i * TS + 16, Y + 18, 9, 6, 0, 0, Math.PI * 2); c.fill(); c.stroke(); c.fillStyle = '#9FC3EA'; c.beginPath(); c.ellipse(X + i * TS + 16, Y + 18, 5, 3, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = '#C9D3DE'; c.fillRect(X + i * TS + 15, Y + 7, 2, 6); } }
       else if (floorUnder(b.x, b.y) === 'k') { c.fillStyle = '#2B2B2B'; rr(c, X + 6, Y + 8, 12, 14, 2); c.fill(); c.fillStyle = '#E5432D'; c.fillRect(X + 9, Y + 10, 6, 3); c.fillStyle = '#F4F1E6'; circ(c, X + Wd - 14, Y + 15, 5); c.fill(); }
       else { const pans = ['#F2B630', '#C23B22', '#6BBF59', '#F7F2E6', '#8A4A26']; for (let i = 0; i < b.w; i++) { c.fillStyle = '#6E7A82'; c.fillRect(X + i * TS + 4, Y + 14, TS - 8, 12); c.fillStyle = pans[(i + hh) % 5]; c.fillRect(X + i * TS + 6, Y + 16, TS - 12, 8); } }
@@ -1994,6 +2072,18 @@ function drawBlock(c, b) {
       c.fillStyle = '#FFF2B0'; c.fillRect(X + 5, Y + 4, 5, 3); c.fillRect(X + Wd - 10, Y + 4, 5, 3);
       c.fillStyle = '#E5432D'; c.fillRect(X + 5, Y + Ht - 7, 5, 3); c.fillRect(X + Wd - 10, Y + Ht - 7, 5, 3); break; }
     case '&': { // a house seen from above: shingled roof with a ridge and a chimney
+      if (MAP.id === 'graveyard') {
+        // a mausoleum: weathered stone slab roof, mossy edges and an iron cross on top
+        c.fillStyle = 'rgba(0,0,0,.45)'; rr(c, X + 6, Y + 8, Wd - 4, Ht - 4, 4); c.fill();
+        rr(c, X + 2, Y + 2, Wd - 4, Ht - 4, 4); c.fillStyle = '#7E7A8C'; c.fill(); c.stroke();
+        rr(c, X + 8, Y + 8, Wd - 16, Ht - 16, 3); c.fillStyle = '#6E6A7C'; c.fill(); c.lineWidth = 1.5; c.stroke();
+        c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 1;
+        for (let xx = X + 16; xx < X + Wd - 8; xx += 24) { c.beginPath(); c.moveTo(xx, Y + 8); c.lineTo(xx, Y + Ht - 8); c.stroke(); }
+        c.fillStyle = 'rgba(80,130,60,.6)'; for (let i = 0; i < b.w * 2; i++) { circ(c, X + 6 + i * 16 + (hh % 7), Y + Ht - 4, 3 + (i % 3)); c.fill(); }
+        const cx = X + Wd / 2, cy = Y + Ht / 2;
+        c.fillStyle = '#2A2433'; c.strokeStyle = INK; c.lineWidth = 1.5; rr(c, cx - 3, cy - 14, 6, 26, 1.5); c.fill(); c.stroke(); rr(c, cx - 10, cy - 7, 20, 6, 1.5); c.fill(); c.stroke();
+        break;
+      }
       const roofs = ['#8E3B3B', '#3E5A7A', '#5A4A3A', '#4C6E4A', '#7A5A8A', '#9A6A3A'], col = roofs[hh % roofs.length];
       c.fillStyle = 'rgba(0,0,0,.4)'; rr(c, X + 6, Y + 8, Wd - 4, Ht - 4, 6); c.fill();
       rr(c, X + 2, Y + 2, Wd - 4, Ht - 4, 5); c.fillStyle = col; c.fill(); c.stroke();
@@ -2095,6 +2185,12 @@ function drawGate(c, x, y, t) {
     c.fillStyle = '#C9D3DE'; c.fillRect(X + TS / 2 - 1, Y + 14, 2, 8);
     c.fillStyle = '#F2C230'; rr(c, X + TS / 2 - 5, Y + 17, 10, 8, 2); c.fill(); c.stroke();
     c.strokeStyle = '#F2C230'; c.beginPath(); c.arc(X + TS / 2, Y + 17, 3.5, Math.PI, 0); c.stroke();
+  } else if (MAP.id === 'graveyard') {
+    // wrought-iron cemetery gate with spikes and a padlock
+    c.fillStyle = '#1E1A28'; for (let i = 0; i < 4; i++) { c.fillRect(X + 3 + i * 8, Y + 3, 2.5, TS - 4); c.beginPath(); c.moveTo(X + 1.5 + i * 8, Y + 5); c.lineTo(X + 4.2 + i * 8, Y - 1); c.lineTo(X + 7 + i * 8, Y + 5); c.closePath(); c.fill(); }
+    c.fillRect(X, Y + 9, TS, 2.5); c.fillRect(X, Y + 23, TS, 2.5);
+    c.strokeStyle = '#3A3448'; c.lineWidth = 1.5; c.beginPath(); c.arc(X + 16, Y + 12, 6, Math.PI, 0); c.stroke();
+    if (x % 2 === 0) { c.fillStyle = '#B8A06A'; c.strokeStyle = INK; c.lineWidth = 1.5; rr(c, X + 11, Y + 15, 10, 8, 2); c.fill(); c.stroke(); }
   } else if (MAP.id === 'parking') {
     // parking gate arm
     c.fillStyle = '#4A4A55'; c.fillRect(X, Y, TS, TS);
@@ -2115,8 +2211,26 @@ function drawSmallObject2(c, t, x, y) {
   const X = x * TS, Y = y * TS, r = k => rnd(x, y, k);
   c.save(); c.lineWidth = 2; c.strokeStyle = INK; c.lineJoin = 'round'; c.lineCap = 'round';
   let done = true;
-  if (t === 'y') {
-    const jungle = MAP.id === 'zoo' && y > 55, bare = !jungle && r(40) < 0.22;
+  if (t === 'i') {
+    // a weathered tombstone: rounded top, RIP, a crack and some moss; now and then a stone cross instead
+    const cx = X + 16, by = Y + 27, tilt = (r(1) - 0.5) * 0.18;
+    c.fillStyle = 'rgba(15,8,30,.38)'; c.beginPath(); c.ellipse(cx + 3, by + 1, 11, 4, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(70,52,40,.5)'; c.beginPath(); c.ellipse(cx, by + 1, 10, 3.5, 0, 0, Math.PI * 2); c.fill();
+    c.save(); c.translate(cx, by); c.rotate(tilt);
+    const stone = ['#8E8A99', '#7E7A8C', '#9A96A6'][Math.floor(r(2) * 3)];
+    if (r(3) < 0.2) {
+      c.fillStyle = stone; rr(c, -3, -24, 6, 24, 1.5); c.fill(); c.stroke(); rr(c, -9, -18, 18, 5.5, 1.5); c.fill(); c.stroke();
+    } else {
+      c.beginPath(); c.moveTo(-9, 0); c.lineTo(-9, -15); c.arc(0, -15, 9, Math.PI, 0); c.lineTo(9, 0); c.closePath(); c.fillStyle = stone; c.fill(); c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(-7, -15, 2, 13);
+      c.fillStyle = 'rgba(30,24,40,.65)'; c.font = 'bold 6px sans-serif'; c.textAlign = 'center'; c.fillText('RIP', 0, -12);
+      c.fillRect(-5, -8, 10, 1.2); c.fillRect(-4, -5, 8, 1.2);
+      if (r(4) < 0.5) { c.strokeStyle = 'rgba(30,24,40,.7)'; c.lineWidth = 1; c.beginPath(); c.moveTo(4, -22); c.lineTo(2, -18); c.lineTo(4, -15); c.stroke(); }
+    }
+    c.fillStyle = 'rgba(80,130,60,.7)'; for (let i = 0; i < 3; i++) { circ(c, -7 + i * 6 + r(5 + i) * 2, -1, 1.8 + r(8 + i)); c.fill(); }
+    c.restore();
+  } else if (t === 'y') {
+    const jungle = MAP.id === 'zoo' && y > 55, bare = !jungle && (MAP.id === 'graveyard' || r(40) < 0.22);
     const cx = X + 16, cy = Y + 14;
     c.fillStyle = 'rgba(15,8,30,.38)'; c.beginPath(); c.ellipse(cx + 5, cy + 8, 17, 10, 0, 0, Math.PI * 2); c.fill();
     if (bare) {
@@ -2322,7 +2436,7 @@ function renderMap() {
   for (const b of blocks()) drawBlock(c, b);
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
     const t = grid[y][x];
-    if ('DhepOyYHV%ujn'.includes(t)) drawSmallObject(c, t, x, y);
+    if ('DhepOyYHV%ujni'.includes(t)) drawSmallObject(c, t, x, y);
     else if (/[1-9]/.test(t)) drawGate(c, x, y, t);
     else if (t === '^') drawExit(c, x, y);
   }
@@ -2491,6 +2605,7 @@ function drawZombie(c, z, t) {
   if (ZT[z.type].animal) return drawAnimal(c, z, t);
   if (z.type === 'pumpkin') return drawPumpkinZ(c, z, t);
   if (z.type === 'ghost') return drawGhostZ(c, z, t);
+  if (z.type === 'skeleton') return drawSkeletonZ(c, z, t);
   if (z.type === 'cart' && !z._body) return drawCartZ(c, z, t);
   const L = zLook(z), s = z.r / 12, hurt = z.hurt > 0;
   const ang = Math.atan2(z.vy || 1, z.vx || 0.0001), ax = Math.cos(ang), ay = Math.sin(ang);
@@ -2698,6 +2813,35 @@ function drawCart(c, z, fa, t) {
   c.strokeStyle = '#E8EEF4'; c.lineWidth = 3; c.stroke();
   c.fillStyle = '#C8372D'; c.strokeStyle = INK; c.lineWidth = 1.5; rr(c, -9, 9, 18, 3.5, 1.5); c.fill(); c.stroke();
   c.restore();
+}
+
+// a fast little skeleton; when the Skeleton King raises one, it claws its way up out of the ground
+function drawSkeletonZ(c, z, t) {
+  const s = z.r / 9, hurt = z.hurt > 0, ang = Math.atan2(z.vy || 1, z.vx || 0.0001), ax = Math.cos(ang), ay = Math.sin(ang);
+  const step = Math.sin(z.anim * 14), rise = z.rise > 0 ? Math.min(1, z.rise / 0.9) : 0, bone = hurt ? '#FFF' : '#EDE8D8';
+  c.save(); c.translate(z.x, z.y); c.lineJoin = 'round'; c.lineCap = 'round';
+  c.fillStyle = 'rgba(10,5,20,.35)'; c.beginPath(); c.ellipse(0, 10 * s, 8 * s, 3 * s, 0, 0, Math.PI * 2); c.fill();
+  if (rise > 0) {
+    c.fillStyle = '#4A3628'; c.beginPath(); c.ellipse(0, 9 * s, 11 * s, 4.5 * s, 0, 0, Math.PI * 2); c.fill();   // fresh dirt
+    c.fillStyle = '#6A4E38'; for (let i = 0; i < 5; i++) { circ(c, Math.cos(i * 1.3) * 9 * s, 9 * s + Math.sin(i * 2.1) * 3 * s, 1.8 * s); c.fill(); }
+    c.beginPath(); c.rect(-30, -60, 60, 60 + 9 * s); c.clip(); c.translate(0, rise * 26 * s);
+  }
+  const limb = (x0, y0, x1, y1) => { c.strokeStyle = INK; c.lineWidth = 3.4 * s; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.strokeStyle = bone; c.lineWidth = 1.8 * s; c.stroke(); };
+  for (const sd of [-1, 1]) limb(sd * 2.2 * s, 4 * s, sd * 3.2 * s + step * sd * 2 * s, 10 * s);                        // legs
+  for (const sd of [-1, 1]) limb(sd * 4.5 * s, -3 * s, sd * 5.5 * s + ax * 7 * s, -1 * s + ay * 4 * s + step * sd * s);  // arms reaching out
+  c.fillStyle = bone; c.strokeStyle = INK; c.lineWidth = 1.6;
+  rr(c, -3.5 * s, 2.5 * s, 7 * s, 3 * s, 1.2 * s); c.fill(); c.stroke();                                                // pelvis
+  c.beginPath(); c.ellipse(0, -1 * s, 5 * s, 4.5 * s, 0, 0, Math.PI * 2); c.fill(); c.stroke();                        // ribcage
+  c.strokeStyle = '#4A3E5A'; c.lineWidth = 1;
+  for (const k of [-2.5, -0.8, 0.9]) { c.beginPath(); c.moveTo(-4 * s, k * s); c.quadraticCurveTo(0, (k + 1.2) * s, 4 * s, k * s); c.stroke(); }
+  c.strokeStyle = INK; c.lineWidth = 1.6;
+  c.fillStyle = bone; circ(c, 0, -9.5 * s, 5.5 * s); c.fill(); c.stroke();                                              // skull
+  rr(c, -3 * s, -6.2 * s, 6 * s, 3 * s, 1 * s); c.fill(); c.stroke();
+  c.strokeStyle = '#4A3E5A'; c.lineWidth = 0.8; for (const k of [-1.5, 0, 1.5]) { c.beginPath(); c.moveTo(k * s, -6 * s); c.lineTo(k * s, -3.6 * s); c.stroke(); }
+  c.fillStyle = '#1A1424'; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * 2.2 * s + ax * 0.8 * s, -10 * s + ay * 0.5, 1.6 * s, 1.9 * s, 0, 0, Math.PI * 2); c.fill(); }
+  c.fillStyle = '#C59BFF'; for (const sd of [-1, 1]) { circ(c, sd * 2.2 * s + ax * 1.1 * s, -10 * s + ay * 0.7, 0.8 * s); c.fill(); }
+  c.restore();
+  z.eyes = rise > 0.3 ? [] : [[z.x - 2.2 * s + ax * 1.1 * s, z.y - 10 * s, 1.1 * s], [z.x + 2.2 * s + ax * 1.1 * s, z.y - 10 * s, 1.1 * s]];
 }
 
 function drawCrawler(c, z, t) {
@@ -2952,6 +3096,42 @@ function drawBoss(c, z, t) {
     c.fillStyle = '#6E6A66'; c.beginPath(); c.ellipse(0, -7 * s, 6 * s, 5 * s, 0, 0, Math.PI * 2); c.fill();
     c.fillStyle = INK; c.fillRect(-3 * s, -4.5 * s, 6 * s, 1.5 * s);
     c.fillStyle = '#F2C230'; c.beginPath(); c.moveTo(-6 * s, -18 * s); c.lineTo(-4 * s, -23 * s); c.lineTo(-1.5 * s, -19.5 * s); c.lineTo(0, -24 * s); c.lineTo(1.5 * s, -19.5 * s); c.lineTo(4 * s, -23 * s); c.lineTo(6 * s, -18 * s); c.closePath(); c.fill(); c.stroke();   // crown
+  } else if (z.type === 'skelking') {
+    // the Skeleton King: tattered purple cape, a crown on his skull, and a bone scepter topped with a glowing skull
+    c.rotate(wob);
+    const bone = flash ? '#FFF' : '#EDE8D8', raising = W.t - (z.raiseT ?? -9) < 1.1;
+    c.fillStyle = flash ? '#FFF' : '#4A2A6A'; c.beginPath(); c.moveTo(-11 * s, -6 * s);
+    for (let i = 0; i <= 6; i++) { const x = -15 * s + i * 5 * s; c.lineTo(x, (i % 2 ? 11 : 14) * s); }
+    c.lineTo(11 * s, -6 * s); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#6A3E8E'; c.beginPath(); c.ellipse(0, -5 * s, 12 * s, 3.5 * s, 0, 0, Math.PI * 2); c.fill(); c.stroke();   // cape collar
+    c.fillStyle = bone; c.beginPath(); c.ellipse(0, 1 * s, 8.5 * s, 9 * s, 0, 0, Math.PI * 2); c.fill(); c.stroke();          // ribcage
+    c.strokeStyle = '#4A3E5A'; c.lineWidth = 1.6;
+    for (const k of [-4, -1, 2, 5]) { c.beginPath(); c.moveTo(-6.5 * s, k * s); c.quadraticCurveTo(0, (k + 2) * s, 6.5 * s, k * s); c.stroke(); }
+    c.beginPath(); c.moveTo(0, -7 * s); c.lineTo(0, 9 * s); c.stroke();
+    // arms: up high while he raises his army, otherwise one holds the scepter forward
+    const limb = (x0, y0, x1, y1) => { c.strokeStyle = INK; c.lineWidth = 5.5; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); c.strokeStyle = bone; c.lineWidth = 3; c.stroke(); };
+    const lh = raising ? [-12 * s, -20 * s] : [-12 * s + ax * 4 * s, 2 * s + ay * 3 * s], rh = raising ? [12 * s, -22 * s] : [13 * s, 1 * s];
+    limb(-8 * s, -4 * s, lh[0], lh[1]); limb(8 * s, -4 * s, rh[0], rh[1]);
+    c.strokeStyle = INK; c.lineWidth = 6; c.beginPath(); c.moveTo(rh[0] - 1 * s, rh[1] + 10 * s); c.lineTo(rh[0] + 1 * s, rh[1] - 14 * s); c.stroke();   // scepter
+    c.strokeStyle = '#D8D2BE'; c.lineWidth = 3.5; c.stroke();
+    const gx = rh[0] + 1 * s, gy = rh[1] - 16 * s, pulse = 0.6 + Math.sin(t * 6) * 0.4;
+    c.fillStyle = `rgba(197,155,255,${0.25 + pulse * 0.25})`; circ(c, gx, gy, 6.5 * s); c.fill();
+    c.fillStyle = bone; c.strokeStyle = INK; c.lineWidth = 1.5; circ(c, gx, gy, 3.6 * s); c.fill(); c.stroke();
+    c.fillStyle = '#C59BFF'; circ(c, gx - 1.2 * s, gy - 0.5 * s, 0.9 * s); c.fill(); circ(c, gx + 1.2 * s, gy - 0.5 * s, 0.9 * s); c.fill();
+    for (const [hx, hy] of [lh, rh]) { c.fillStyle = bone; c.strokeStyle = INK; c.lineWidth = 1.6; circ(c, hx, hy, 2.6 * s); c.fill(); c.stroke(); }
+    // skull, jaw and crown
+    c.lineWidth = 2.5; c.fillStyle = bone; circ(c, 0, -12 * s, 8.5 * s); c.fill(); c.stroke();
+    const jaw = W.t - z.throwT < 0.3 || raising ? 2 * s : 0;
+    rr(c, -4.5 * s, (-7 + jaw / s) * s, 9 * s, 4 * s, 1.5 * s); c.fill(); c.stroke();
+    c.strokeStyle = '#4A3E5A'; c.lineWidth = 1; for (const k of [-2.5, -0.8, 0.8, 2.5]) { c.beginPath(); c.moveTo(k * s, -6.8 * s + jaw); c.lineTo(k * s, -3.4 * s + jaw); c.stroke(); }
+    c.fillStyle = '#1A1424'; for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * 3.4 * s + ax * s, -13 * s + ay, 2.6 * s, 3 * s, 0, 0, Math.PI * 2); c.fill(); }
+    c.beginPath(); c.moveTo(0, -10.5 * s); c.lineTo(-1 * s, -8.5 * s); c.lineTo(1 * s, -8.5 * s); c.closePath(); c.fill();
+    const glow = z.windup > 0 ? '#FF6A5A' : '#C59BFF';
+    c.fillStyle = glow; for (const sd of [-1, 1]) { circ(c, sd * 3.4 * s + ax * 1.5 * s, -13 * s + ay * 1.2, 1.3 * s); c.fill(); }
+    c.fillStyle = '#F2C230'; c.strokeStyle = INK; c.lineWidth = 1.8; c.beginPath();
+    c.moveTo(-7 * s, -18 * s); c.lineTo(-7.5 * s, -24 * s); c.lineTo(-4 * s, -21 * s); c.lineTo(0, -26 * s); c.lineTo(4 * s, -21 * s); c.lineTo(7.5 * s, -24 * s); c.lineTo(7 * s, -18 * s); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#C8372D'; circ(c, 0, -20.5 * s, 1.4 * s); c.fill();
+    c.lineWidth = 2.5; c.strokeStyle = INK;
   } else if (z.type === 'mallcop') {
     // riding a segway
     c.fillStyle = '#16121F'; for (const sd of [-1, 1]) { rr(c, sd * 13 * s - 3 * s, 5 * s, 6 * s, 10 * s, 2 * s); c.fill(); }
@@ -2999,7 +3179,8 @@ function drawBoss(c, z, t) {
   }
   // eyes and snarl
   z.eyes = [];
-  if (z.type !== 'garbage' && z.type !== 'mallcop') {
+  if (z.type === 'skelking') { const sx2 = z.x + shakeX, sy2 = z.y - rise; z.eyes = [[sx2 - 3.4 * s + ax * 1.5 * s, sy2 - 13 * s, 1.4 * s], [sx2 + 3.4 * s + ax * 1.5 * s, sy2 - 13 * s, 1.4 * s]]; }
+  if (z.type !== 'garbage' && z.type !== 'mallcop' && z.type !== 'skelking') {
     const ey = z.type === 'driver' ? -12 : -10;
     c.lineWidth = 1.2; c.strokeStyle = INK;
     for (const [dx, r2] of [[-3.6, 2.7], [3.6, 2]]) { c.fillStyle = '#FFF7CF'; circ(c, dx * s, ey * s, r2 * s); c.fill(); c.stroke(); c.fillStyle = z.windup > 0 ? '#E5432D' : INK; circ(c, dx * s + ax, ey * s + ay, r2 * 0.45 * s); c.fill(); z.eyes.push([z.x + shakeX + dx * s, z.y - rise + ey * s, r2 * s]); }
@@ -3008,7 +3189,7 @@ function drawBoss(c, z, t) {
   c.restore();
   // name tag
   c.font = '11px "Lilita One", Impact, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 3.5; c.strokeStyle = '#000'; c.lineJoin = 'round';
-  const tag = { janitor: 'JANITOR', driver: 'BUS DRIVER', ref: 'REF', coach: 'COACH', principal: 'PRINCIPAL', garbage: 'GARBAGE MAN', housekeeper: 'HOUSEKEEPER', silverback: 'SILVERBACK', mallcop: 'MALL COP', icecream: 'ICE CREAM MAN' }[z.type];
+  const tag = { janitor: 'JANITOR', driver: 'BUS DRIVER', ref: 'REF', coach: 'COACH', principal: 'PRINCIPAL', garbage: 'GARBAGE MAN', housekeeper: 'HOUSEKEEPER', silverback: 'SILVERBACK', mallcop: 'MALL COP', icecream: 'ICE CREAM MAN', skelking: 'SKELETON KING' }[z.type];
   c.strokeText(tag, z.x, z.y - z.r * 1.9 - rise); c.fillStyle = '#FFE27A'; c.fillText(tag, z.x, z.y - z.r * 1.9 - rise);
   if (z.windup > 0) { c.font = '18px "Lilita One", Impact, sans-serif'; c.strokeText('!', z.x, z.y - z.r * 2.6); c.fillStyle = '#E5432D'; c.fillText('!', z.x, z.y - z.r * 2.6); }
 }
@@ -3256,7 +3437,7 @@ function resize() {
 /* ---------- light, atmosphere and screen effects ---------- */
 // Each map gets a moonlit ambient color. The scene is multiplied by a light map: ambient everywhere, plus warm
 // lights (your flashlight, lamps, jack-o'-lanterns, neon) added on top. Then glowing things are drawn additively.
-const AMBIENT = { school: [58, 48, 100], gym: [58, 50, 100], field: [84, 88, 146], parking: [66, 64, 122], street: [70, 66, 126], house: [60, 50, 102], drive: [96, 98, 154], zoo: [76, 82, 132], mall: [62, 52, 104], park: [74, 80, 134] };
+const AMBIENT = { school: [58, 48, 100], gym: [58, 50, 100], field: [84, 88, 146], parking: [66, 64, 122], street: [70, 66, 126], house: [60, 50, 102], drive: [96, 98, 154], zoo: [76, 82, 132], mall: [62, 52, 104], park: [74, 80, 134], graveyard: [58, 62, 112] };
 let light = null, lctx = null, vignetteC = null, fogSprite = null, glowCache = {}, coneSprite = null;
 let amb = [], fogs = [], bats = [], batT = 4, corpses = [], rings = [], hitstop = 0, zoomK = 0, irisT = 9, stepT = 0;
 const LQ = 0.5;   // the light map is drawn at half resolution: soft and cheap
@@ -3583,6 +3764,7 @@ function drawEShots(c) {
     if (f.kind === 'book') { c.fillStyle = ['#C8372D', '#3E6FA8', '#4C9A55'][Math.floor(f.x) % 3]; c.fillRect(-7, -5, 14, 10); c.strokeRect(-7, -5, 14, 10); c.fillStyle = '#F4F1E6'; c.fillRect(-7, -3, 2, 6); }
     else if (f.kind === 'spray') { c.fillStyle = 'rgba(159,211,232,.75)'; circ(c, 0, 0, 7); c.fill(); c.stroke(); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, -2, -2, 2.5); c.fill(); }
     else if (f.kind === 'trash') { c.fillStyle = '#26262E'; c.beginPath(); c.ellipse(0, 1, 9, 8, 0, 0, Math.PI * 2); c.fill(); c.stroke(); c.fillStyle = '#F2C230'; c.fillRect(-2, -9, 4, 4); c.fillStyle = 'rgba(255,255,255,.2)'; circ(c, -3, -2, 2.5); c.fill(); }
+    else if (f.kind === 'bone') { c.fillStyle = '#EDE8D8'; rr(c, -7, -2, 14, 4, 2); c.fill(); c.stroke(); for (const [bx, by] of [[-7, -2.5], [-7, 2.5], [7, -2.5], [7, 2.5]]) { circ(c, bx, by, 2.6); c.fill(); c.stroke(); } c.fillRect(-6.5, -1.5, 13, 3); }
     else if (f.kind === 'banana') { c.fillStyle = '#F2D34A'; c.beginPath(); c.arc(0, 0, 8, 0.3, Math.PI - 0.3); c.arc(0, -3, 7, Math.PI - 0.4, 0.4, true); c.closePath(); c.fill(); c.stroke(); }
     else if (f.kind === 'donut') { c.fillStyle = '#C98A3E'; circ(c, 0, 0, 8); c.fill(); c.stroke(); c.fillStyle = '#F07AA8'; circ(c, 0, 0, 6); c.fill(); c.fillStyle = '#2A2340'; circ(c, 0, 0, 2.5); c.fill(); }
     else if (f.kind === 'cone') { c.fillStyle = '#D9A55A'; c.beginPath(); c.moveTo(-4, -1); c.lineTo(4, -1); c.lineTo(0, 9); c.closePath(); c.fill(); c.stroke(); c.fillStyle = ['#F07AA8', '#7BD84A', '#F4F1E6'][Math.floor(f.d / 60) % 3]; circ(c, 0, -3, 5); c.fill(); c.stroke(); }
@@ -3806,6 +3988,14 @@ function consume() {
     }
     else if (ev.e === 'pound') { kick(0.2); popups.push({ x: ev.z.x, y: ev.z.y - ev.z.r * 2.9, text: 'THUMP THUMP!', t: 0, life: 1.0, color: '#FFE27A', size: 13 }); rings.push({ x: ev.z.x, y: ev.z.y, r0: 10, r1: 70, w: 4, t: 0, dur: 0.5, col: '#FFE27A' }); }
     else if (ev.e === 'pant') { popups.push({ x: ev.z.x, y: ev.z.y - ev.z.r * 2.2, text: ev.z.type === 'silverback' ? 'HUFF... HUFF...' : 'PHEW!', t: 0, life: 0.9, color: '#BFE6FF', size: 12 }); }
+    else if (ev.e === 'crumble') {
+      if (Math.random() < 0.35) popups.push({ x: ev.z.x, y: ev.z.y - 26, text: 'CLATTER!', t: 0, life: 0.7, color: '#EDE8D8', size: 12 });
+      for (let i = 0; i < 10; i++) particles.push({ x: ev.z.x, y: ev.z.y - 4, vx: rand(-150, 150), vy: rand(-170, 40), life: 0.6, max: 0.6, c: i % 3 ? '#EDE8D8' : '#B8B2A2', r: rand(1.8, 3.2) });
+    }
+    else if (ev.e === 'raise') {
+      kick(0.25); rings.push({ x: ev.z.x, y: ev.z.y, r0: 10, r1: 90, w: 5, t: 0, dur: 0.6, col: '#C59BFF' });
+      for (let i = 0; i < 20; i++) { const a = rand(0, Math.PI * 2); particles.push({ x: ev.z.x + Math.cos(a) * 30, y: ev.z.y + Math.sin(a) * 30, vx: Math.cos(a) * 80, vy: Math.sin(a) * 80 - 60, life: 0.8, max: 0.8, c: i % 2 ? '#C59BFF' : '#6A4E38', r: rand(2, 4) }); }
+    }
     else if (ev.e === 'dizzy') { popups.push({ x: ev.z.x, y: ev.z.y - 36, text: 'DIZZY!', t: 0, life: 0.9, color: '#FFE27A', size: 14 }); }
     else if (ev.e === 'pumpkinPop') {
       kick(0.25); popups.push({ x: ev.z.x, y: ev.z.y - 30, text: 'POP!', t: 0, life: 0.9, color: '#F29A2A', size: 18 });
@@ -4046,7 +4236,7 @@ function endLevel(win) {
     card.innerHTML = `<h2>${last ? 'You made it out!' : 'Escaped!'}</h2><div class="stars">${[0, 1, 2].map(i => `<i class="${i < stars ? 'on' : ''}">★</i>`).join('')}</div>
       ${MAP.car ? `<div class="big">💥 ${W.kills} / ${W.zTotal}</div><p class="small">zombies splatted${stars < 3 ? `. Splat ${Math.ceil(W.zTotal * (stars === 1 ? 0.4 : 0.75))} for the next star.` : '. Road warrior!'}</p>` : `<div class="big">🙋 ${saved} / ${total}</div><p class="small">survivors rescued${stars < 3 ? `. Rescue ${stars === 1 ? Math.ceil(total / 2) : total} for the next star.` : '. Everyone made it!'}</p>`}
       ${newW ? `<p>New weapon unlocked: <b>${newW}</b></p>` : ''}
-      ${last ? '<p>School, home, freeway, zoo, mall and park: you beat them all, from the Janitor to the Ice Cream Man. You survived Bite Night!</p>' : `<p class="small">Next: ${LEVELS[li + 1].name}</p>`}
+      ${last ? '<p>School, home, freeway, zoo, mall, park and the haunted church: you beat them all, from the Janitor to the Skeleton King. You survived Bite Night!</p>' : `<p class="small">Next: ${LEVELS[li + 1].name}</p>`}
       <button class="btn" id="b1">${last ? 'PLAY AGAIN' : 'KEEP GOING'}</button><button class="btn alt" id="b2">${last ? 'MENU' : 'REPLAY'}</button>`;
   } else {
     card.innerHTML = `<h2 class="bad">${MAP.car ? 'Wrecked!' : 'You turned!'}</h2><div class="big">Room ${W.zoneSeen.length} / ${MAP.zones.length}</div><p class="small">${MAP.zones[W.zone] ? MAP.zones[W.zone].name : ''}</p>
@@ -4080,7 +4270,7 @@ function showMenu() {
     ${progress.weapons.length > 1 ? `<p class="small">Your weapons: ${progress.weapons.map(k => WEAPONS[k].icon + ' ' + WEAPONS[k].name).join(' · ')}</p>` : ''}
     <div class="lvgrid">${LEVELS.map((l, i) => {
       const s = progress.stars[i + 1] || 0, locked = !UNLOCK_ALL_LEVELS && i + 1 > progress.unlocked;
-      return `<button class="lv" data-i="${i}" ${locked ? 'disabled' : ''}>${locked ? '🔒' : ['🏫', '🏀', '🏈', '🚌', '🏘️', '🏠', '🚗', '🦁', '🛍️', '🌳'][i]}<small>${'★'.repeat(s)}${'☆'.repeat(3 - s)}</small><em>${l.name}</em></button>`;
+      return `<button class="lv" data-i="${i}" ${locked ? 'disabled' : ''}>${locked ? '🔒' : ['🏫', '🏀', '🏈', '🚌', '🏘️', '🏠', '🚗', '🦁', '🛍️', '🌳', '⛪'][i]}<small>${'★'.repeat(s)}${'☆'.repeat(3 - s)}</small><em>${l.name}</em></button>`;
     }).join('')}</div>
     <button class="btn" id="go">${progress.unlocked > 1 ? 'BACK TO SCHOOL' : 'ENTER THE SCHOOL'}</button>
     ${window.__storeLinks ? storeLinks() : window.__installEvt ? '<button class="btn alt" id="install">📲 INSTALL</button>' : (window.__isPWA && /iphone|ipad|ipod/i.test(navigator.userAgent) && !navigator.standalone ? '<p class="small">Play it like an app: tap <b>Share</b>, then <b>Add to Home Screen</b>.</p>' : '')}`;
