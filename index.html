@@ -304,33 +304,42 @@ function buildParkingMap() {
   rect(1, 75, 28, 78, '#'); rect(1, 71, 28, 74, 'C'); rect(12, 75, 17, 75, 'C');
   const car = (x, y) => rect(x, y, x, y + 1, 'Q');
   const carRow = (x0, x1, y, skip = []) => { for (let x = x0; x <= x1; x++) if (!skip.includes(x)) car(x, y); };
-  // STAFF PARKING (y 51-70): two back-to-back islands, a tree-lined median, and little clusters to weave between
-  carRow(3, 10, 64, [7]); carRow(3, 10, 66, [5]); carRow(18, 26, 64, [22]); carRow(18, 26, 66, [24]);
-  rect(8, 59, 21, 60, 'M'); for (const x of [9, 13, 17, 20]) put(x, 59, 'y');
-  carRow(2, 6, 53); carRow(13, 16, 54); carRow(22, 27, 53, [25]);
-  // VISITOR PARKING (y 31-49): a round planter in the middle, open on one side, with a little prize inside
-  for (let y = 35; y <= 45; y++) for (let x = 9; x <= 20; x++) {
-    const d = Math.hypot(x - 14.5, (y - 40) * 1.05);
-    if (d <= 4.2 && !(y >= 42 && x >= 14 && x <= 15)) g[y][x] = 'M';
-    if (d >= 3.0 && d <= 4.2 && !(y >= 42 && x >= 13 && x <= 16)) g[y][x] = 'y';   // a ring of spooky trees around a little clearing
+  // The lot winds around buildings: rows of parked cars act as walls, so you jog left, right and around.
+  // STAFF PARKING (y 51-70): a corner store blocks the right side, so you head left and up the side lane
+  rect(18, 55, 28, 66, '&');                       // corner store
+  rect(17, 55, 17, 66, 'M'); for (const y of [57, 61, 65]) put(17, y, 'y');
+  carRow(4, 16, 67); carRow(18, 22, 67); carRow(26, 28, 67);   // you arrive below this row: the way up is on the far left
+  carRow(1, 11, 63);                                // jog right...
+  carRow(5, 16, 59, [10]);                          // ...and back left
+  carRow(1, 20, 52, [7]);                           // the top row: squeeze through on the right
+  // VISITOR PARKING (y 31-49): a bus garage fills the left, and a grove of spooky trees grows in the right lane
+  rect(1, 36, 12, 46, '&');                         // bus garage
+  carRow(14, 26, 47);
+  for (let y = 36; y <= 46; y++) for (let x = 16; x <= 26; x++) {
+    const d = Math.hypot(x - 21, (y - 41) * 1.05);
+    if (d <= 4.2 && !(y >= 43 && x >= 21 && x <= 21)) g[y][x] = 'M';
+    if (d >= 3.0 && d <= 4.2 && !(y >= 43 && x >= 20 && x <= 22)) g[y][x] = 'y';   // a ring of trees around a little clearing
   }
-  carRow(2, 7, 33); carRow(21, 27, 33, [24]); carRow(2, 7, 46, [4]); carRow(22, 27, 46);
-  car(26, 39); car(3, 40); car(8, 39);
-  // STUDENT LOT (y 11-29): a messy pile-up of buses and abandoned cars with pockets to clear
-  rect(2, 20, 10, 21, 'U'); rect(17, 14, 25, 15, 'U');
-  carRow(13, 16, 25); carRow(20, 23, 22); car(4, 13); car(8, 16); car(26, 19); car(12, 12); car(5, 26); car(24, 26);
-  rect(27, 12, 28, 17, 'M'); put(28, 13, 'y'); put(27, 16, 'y');
-  for (const [x, y] of [[14, 62], [5, 57], [24, 57], [14, 47], [6, 25], [20, 27], [14, 18]]) put(x, y, 'O');
-  for (const [x, y] of [[26, 61], [3, 61], [27, 41], [2, 37], [11, 22], [16, 16]]) put(x, y, '%');
+  carRow(13, 27, 33);                               // the way up is back over on the left, above the garage
+  car(4, 31); car(9, 32);
+  // STUDENT LOT (y 11-29): around the concession stand, past a parked bus
+  rect(10, 17, 19, 23, '&');                        // concession stand
+  carRow(10, 28, 27);                               // keeps you on the left side at first
+  carRow(1, 6, 24);
+  rect(21, 19, 28, 20, 'U');                        // a bus parked across the right lane
+  carRow(1, 22, 12, [15]);                          // the gate is through the gap on the right
+  car(23, 16); car(4, 15);
+  for (const [x, y] of [[8, 69], [24, 69], [3, 57], [14, 55], [14, 49], [27, 37], [8, 34], [24, 31], [5, 21], [22, 15]]) put(x, y, 'O');
+  for (const [x, y] of [[2, 69], [15, 62], [27, 49], [13, 39], [7, 19], [27, 25], [20, 14]]) put(x, y, '%');
   rect(1, 50, 28, 50, '1'); rect(1, 30, 28, 30, '2'); rect(1, 10, 28, 10, '3');
   // 3: the bus loop (boss)
   rect(3, 4, 11, 5, 'U'); rect(18, 4, 26, 5, 'U'); put(14, 7, 'O');
-  const lights = [[14, 62, 150], [5, 57, 150], [24, 57, 150], [14, 47, 150], [6, 25, 150], [20, 27, 150], [14, 18, 150], [14, 7, 200], [14, 73, 200]];
+  const lights = [[8, 69, 150], [24, 69, 150], [3, 57, 150], [14, 55, 150], [14, 49, 150], [27, 37, 150], [8, 34, 150], [24, 31, 150], [5, 21, 150], [22, 15, 150], [14, 7, 200], [14, 73, 200]];
   return { id: 'parking', name: 'Parking Lot', grid: g, start: [14, 73], dark: 0.8, lights, boss: ['driver'],
     zones: [
-      { name: 'STAFF PARKING', zombies: { walker: 6, runner: 2 }, survivors: [[27, 63]], pickups: [['ammo', 3, 69]] },
-      { name: 'VISITOR PARKING', zombies: { walker: 6, runner: 3, nerd: 2, cheer: 1 }, survivors: [[2, 43]], powers: [[14, 40]], pickups: [['health', 26, 48]] },
-      { name: 'STUDENT LOT', zombies: { walker: 6, runner: 4, brute: 2, cheer: 2 }, spawns: [['crawler', 4, 22], ['crawler', 22, 28], ['crawler', 12, 16]], survivors: [[27, 23]], pickups: [['ammo', 14, 28]] },
+      { name: 'STAFF PARKING', zombies: { walker: 6, runner: 2 }, survivors: [[27, 69]], pickups: [['ammo', 3, 66]] },
+      { name: 'VISITOR PARKING', zombies: { walker: 6, runner: 3, nerd: 2, cheer: 1 }, survivors: [[2, 32]], powers: [[21, 41]], pickups: [['health', 13, 47]] },
+      { name: 'STUDENT LOT', zombies: { walker: 6, runner: 4, brute: 2, cheer: 2 }, spawns: [['crawler', 4, 22], ['crawler', 24, 23], ['crawler', 12, 15]], survivors: [[27, 23]], pickups: [['ammo', 5, 28]] },
       { name: 'BUS LOOP', zombies: { walker: 4, runner: 2 }, survivors: [[14, 2]], pickups: [['health', 2, 8], ['health', 27, 8]] }
     ] };
 }
@@ -477,36 +486,38 @@ function buildMallMap() {
   const g = blankMap(34, 58, '#'), { rect, put } = mk(g);
   rect(12, 38, 21, 56, '.');   // 0 entrance
   rect(1, 38, 10, 56, 'c');    // 1 food court
-  rect(1, 19, 10, 36, 'r');    // 2 arcade
+  rect(1, 19, 10, 36, 'l');    // 2 department store
   rect(12, 19, 21, 36, '.');   // 3 center court
   rect(23, 19, 32, 36, 'g');   // 4 sports store
   rect(23, 38, 32, 56, 'k');   // 5 toy store
-  rect(1, 1, 32, 17, 'l');     // 6 department store
+  rect(1, 1, 32, 17, 'r');     // 6 the arcade: the Mall Cop's last stand
   rect(11, 45, 11, 47, '1'); rect(4, 37, 6, 37, '2'); rect(11, 26, 11, 28, '3'); rect(22, 26, 22, 28, '4'); rect(26, 37, 28, 37, '5'); rect(15, 18, 18, 18, '6');
   rect(14, 0, 19, 0, '^');
   // entrance
   rect(13, 41, 14, 41, 'b'); rect(19, 41, 20, 41, 'b'); put(12, 38, 'p'); put(21, 38, 'p'); put(12, 56, 'p'); put(21, 56, 'p');
   // food court
   rect(1, 55, 8, 56, 'F'); for (const y of [43, 47, 51]) { rect(2, y, 3, y, 'T'); rect(7, y, 8, y, 'T'); } put(10, 55, 'V');
-  // arcade: rows of machines
-  for (const y of [21, 25, 29, 33]) { put(2, y, 'V'); put(4, y, 'V'); put(7, y, 'V'); put(9, y, 'V'); }
+  // department store: clothing racks
+  for (const x of [3, 7]) { rect(x, 21, x, 26, 'S'); rect(x, 30, x, 34, 'S'); }
   // center court: the fountain
   rect(15, 25, 18, 29, '~'); rect(13, 21, 14, 21, 'b'); rect(19, 21, 20, 21, 'b'); rect(13, 33, 14, 33, 'b'); rect(19, 33, 20, 33, 'b'); put(12, 19, 'p'); put(21, 19, 'p'); put(12, 36, 'p'); put(21, 36, 'p');
   // sports store
   for (const y of [21, 25, 29, 33]) rect(25, y, 30, y, 'S'); put(32, 19, 'e');
   // toy store
   for (const x of [25, 29]) rect(x, 41, x, 47, 'S'); rect(25, 51, 30, 51, 'T'); put(32, 56, 'p');
-  // department store: racks and counters
-  for (const x of [3, 7, 25, 29]) rect(x, 4, x + 1, 12, 'S'); rect(13, 4, 20, 5, 'F'); rect(13, 10, 14, 11, 'T'); rect(19, 10, 20, 11, 'T');
+  // the arcade: rows of machines along the sides you can smash open for snacks and ammo, air hockey in the middle, open floor to dodge
+  for (const y of [3, 8, 13]) { put(3, y, 'V'); put(4, y, 'V'); put(29, y, 'V'); put(30, y, 'V'); }
+  put(9, 3, 'V'); put(24, 3, 'V'); put(9, 14, 'V'); put(24, 14, 'V');
+  rect(10, 8, 11, 9, 'T'); rect(22, 8, 23, 9, 'T');
   return { id: 'mall', name: 'The Shopping Mall', grid: g, start: [16, 55], dark: 0.82, lights: [], indoor: true, boss: ['mallcop'], noPacks: true,
     zones: [
       { name: 'MALL ENTRANCE', zombies: { walker: 3 }, pickups: [['ammo', 13, 39]] },
       { name: 'FOOD COURT', zombies: { walker: 4, runner: 1, cart: 1 }, survivors: [[10, 40]], pickups: [['health', 5, 53]] },
-      { name: 'THE ARCADE', zombies: { walker: 3, nerd: 3, ghost: 1 }, survivors: [[1, 19]], features: [['switch', 10, 19]] },
+      { name: 'DEPARTMENT STORE', zombies: { walker: 2, cart: 2 }, survivors: [[1, 19]], features: [['switch', 10, 19]], pickups: [['health', 1, 35]] },
       { name: 'CENTER COURT', zombies: { walker: 4, runner: 2, cheer: 2, cart: 2 }, pickups: [['ammo', 16, 35]], powers: [[16, 22]] },
       { name: 'SPORTS STORE', zombies: { walker: 3, brute: 2, pumpkin: 1 }, survivors: [[32, 35]], pickups: [['ammo', 32, 20]], features: [['alarm', 23, 32]] },
       { name: 'TOY STORE', zombies: { walker: 2, runner: 2, cart: 1, ghost: 1 }, spawns: [['crawler', 27, 44], ['crawler', 31, 50]], survivors: [[32, 38], [23, 56]], pickups: [['health', 27, 55]] },
-      { name: 'DEPARTMENT STORE', zombies: { walker: 2, cart: 2 }, pickups: [['health', 1, 17], ['ammo', 32, 17]] }
+      { name: 'THE ARCADE', zombies: { walker: 3, nerd: 3, ghost: 1 }, pickups: [['health', 1, 17], ['ammo', 32, 17]], powers: [[16, 11]] }
     ] };
 }
 
@@ -618,7 +629,7 @@ const LEVELS = [
   { map: 'field',   name: 'Football Field',    speed: 1.1,  drop: 0.02,  seed: 37, boss: 1.15,
     hint: 'Cheerleaders backflip out of the way of your shots. Keep shooting until they get dizzy!' },
   { map: 'parking', name: 'Parking Lot',       speed: 1.15, drop: 0.025, seed: 53, boss: 1.25,
-    hint: 'Weave between the parked cars and the spooky grove. Gas cans explode!' },
+    hint: 'The parked cars are walls: find the gaps and wind your way around the buildings. Gas cans explode!' },
   { map: 'street',  name: 'Down the Street',   speed: 1.2,  drop: 0.025, seed: 71, boss: 1.3,
     hint: 'Fight your way home. Watch out for Pumpkin Heads: pop them from far away!' },
   { map: 'house',   name: 'Home Sweet Home',     speed: 1.15, drop: 0.025, seed: 83, boss: 1.2,
@@ -628,7 +639,7 @@ const LEVELS = [
   { map: 'zoo',     name: 'The City Zoo',        speed: 1.2,  drop: 0.025, seed: 101, boss: 1.3,
     hint: 'The animals got out, and they are zombies too. Monkeys are fast, lions are faster!' },
   { map: 'mall',    name: 'The Shopping Mall',   speed: 1.25, drop: 0.03,  seed: 113, boss: 1.35,
-    hint: 'Cart Pushers block shots from the front. Get around to the side!' },
+    hint: 'Cart Pushers block shots from the front. The Mall Cop waits in the arcade: smash machines for supplies!' },
   { map: 'park',    name: 'The City Park',       speed: 1.3,  drop: 0.03,  seed: 127, boss: 1.4,
     hint: 'Last stop: the park. Watch the bushes, and listen for the ice cream jingle...' }
 ];
@@ -650,8 +661,8 @@ const ZT = {
   principal: { r: 23, hp: 80, speed: 46, dmg: 2, color: '#7E9E6A', boss: 'THE PRINCIPAL', sub: 'You are in SO much trouble.' },
   garbage:     { r: 26, hp: 70, speed: 44, dmg: 2, color: '#82A86A', boss: 'THE GARBAGE MAN', sub: "It's garbage day. You're the garbage." },
   housekeeper: { r: 19, hp: 55, speed: 60, dmg: 2, color: '#86AE6E', boss: 'THE HOUSEKEEPER', sub: 'She JUST mopped in here.' },
-  silverback:  { r: 24, hp: 70, speed: 54, dmg: 2, color: '#6E7A6A', boss: 'THE SILVERBACK', sub: 'King of the zombie zoo.' },
-  mallcop:     { r: 18, hp: 60, speed: 72, dmg: 2, color: '#86AE6E', boss: 'THE MALL COP', sub: 'No running in the mall!' },
+  silverback:  { r: 24, hp: 100, speed: 78, dmg: 2, color: '#6E7A6A', boss: 'THE SILVERBACK', sub: 'When he pounds his chest, RUN!' },
+  mallcop:     { r: 18, hp: 90, speed: 100, dmg: 2, color: '#86AE6E', boss: 'THE MALL COP', sub: 'He is fast. Use the arcade machines!' },
   icecream:    { r: 21, hp: 75, speed: 50, dmg: 2, color: '#86AE6E', boss: 'THE ICE CREAM MAN', sub: 'Brain freeze!' },
   // zombie animals
   lion:    { r: 13, hp: 3, speed: 112, dmg: 1, color: '#C9A24A', animal: true },
@@ -906,7 +917,7 @@ function damageProp(w, tx, ty, bySwing) {
   if (v.kind === 'barrel') explode(w, cx, cy);
   else {
     w.events.push({ e: 'vendBreak', x: cx, y: cy });
-    for (let i = 0; i < 2; i++) w.pickups.push({ type: 'health', heal: 1, x: cx + rand(-14, 14), y: cy + rand(-6, 14), taken: false, ttl: 30 });
+    for (let i = 0; i < (MAP.id === 'mall' ? 1 : 2); i++) w.pickups.push({ type: 'health', heal: 1, x: cx + rand(-14, 14), y: cy + rand(-6, 14), taken: false, ttl: 30 });
     // out of ammo and smashing it open with your backpack? It always has ammo inside.
     if (bySwing || w.me.ammo < 5) {
       w.pickups.push({ type: 'ammo', amount: 20, x: cx - 8, y: cy + 12, taken: false, ttl: 30 });
@@ -1136,10 +1147,13 @@ function bossThink(w, z, dt) {
   const me = w.me, dx = me.x - z.x, dy = me.y - z.y, d = Math.hypot(dx, dy), pace = z.tough;
   z.aggro = 99;
   if (z.enter > 0) { z.enter -= dt; return true; }
-  if (z.windup > 0) { z.windup -= dt; if (z.windup <= 0) z.charge = 0.6; return true; }
+  if (z.windup > 0) { z.windup -= dt; if (z.windup <= 0) z.charge = { silverback: 1.5, mallcop: 0.9 }[z.type] || 0.6; return true; }
   if (z.charge > 0) {
     z.charge -= dt;
-    const sp = ({ driver: 300, garbage: 400, mallcop: 420 }[z.type] || 340) * dt, bx = z.x, by = z.y;
+    const home = { silverback: 2.2, mallcop: 1.3 }[z.type];   // these two steer after you while they charge
+    if (home) { let da = Math.atan2(dy, dx) - z.chargeA; da = Math.atan2(Math.sin(da), Math.cos(da)); z.chargeA += clamp(da, -home * dt, home * dt); }
+    if (z.charge <= 0 && home) { z.stun = z.type === 'silverback' ? 0.9 : 0.6; w.events.push({ e: 'pant', z }); }   // worn out: your moment to hit back
+    const sp = ({ driver: 300, garbage: 400, mallcop: 420, silverback: 330 }[z.type] || 340) * dt, bx = z.x, by = z.y;
     slide(z, Math.cos(z.chargeA) * sp, Math.sin(z.chargeA) * sp, bodyR(z));
     z.vx = Math.cos(z.chargeA); z.vy = Math.sin(z.chargeA);
     if (Math.hypot(z.x - bx, z.y - by) < sp * 0.3) { z.charge = 0; z.stun = 1.0; w.events.push({ e: 'bonk', z }); }
@@ -1185,13 +1199,11 @@ function bossThink(w, z, dt) {
     if (z.t2 <= 0) { z.t2 = 11 / pace; if (!w.zombies.some(o => o.type === 'dust' && !o.dead)) { summonMinis(w, z, 3, 3, 'dust'); w.events.push({ e: 'bossYell', z, text: 'DUST BUNNIES!' }); } }
     if (z.t3 <= 0) { z.t3 = 7 / pace; if (d < 320) { startCharge('TIDY UP!'); return true; } }
   } else if (z.type === 'silverback') {
-    if (z.t1 <= 0) { z.t1 = rand(2.6, 3.2) / pace; toss('banana', 250, { bounce: 1, r: 7 }); }
-    if (z.t2 <= 0) { z.t2 = 10 / pace; if (w.zombies.filter(o => o.type === 'monkey' && !o.dead).length <= 1) { summonMinis(w, z, 2, 3, 'monkey'); w.events.push({ e: 'bossYell', z, text: 'OOH OOH AAH AAH!' }); } }
-    if (z.t3 <= 0) { z.t3 = 6 / pace; if (d < 320) { startCharge('ROAAAR!'); return true; } }
+    if (z.t2 <= 0) { z.t2 = 12 / pace; if (w.zombies.filter(o => o.type === 'monkey' && !o.dead).length <= 1) { summonMinis(w, z, 2, 3, 'monkey'); w.events.push({ e: 'bossYell', z, text: 'OOH OOH AAH AAH!' }); } }
+    if (z.t3 <= 0) { z.t3 = rand(3.0, 3.6) / pace; if (d < 440) { startCharge('ROAAAR!'); z.windup = 1.0; w.events.push({ e: 'pound', z }); return true; } }
   } else if (z.type === 'mallcop') {
-    if (z.t1 <= 0) { z.t1 = rand(2.2, 2.8) / pace; toss('donut', 250, { r: 7 }); }
     if (z.t2 <= 0) { z.t2 = 13 / pace; if (!w.zombies.some(o => o.type === 'mini' && !o.dead)) { summonMinis(w, z, 2, 2); w.events.push({ e: 'bossYell', z, text: 'I NEED BACKUP!' }); } }
-    if (z.t3 <= 0) { z.t3 = 5 / pace; if (d < 340) { startCharge('HALT!'); return true; } }
+    if (z.t3 <= 0) { z.t3 = rand(3.0, 3.8) / pace; if (d < 380) { startCharge(['HALT!', 'FREEZE!', 'NO RUNNING!'][Math.floor(Math.random() * 3)]); z.windup = 0.75; return true; } }
   } else if (z.type === 'icecream') {
     if (z.t1 <= 0) {
       z.t1 = rand(2.4, 3.0) / pace;
@@ -2924,10 +2936,18 @@ function drawBoss(c, z, t) {
   } else if (z.type === 'silverback') {
     c.rotate(wob);
     const fur = flash ? '#FFF' : '#2E2E36';
-    for (const sd of [-1, 1]) { c.fillStyle = fur; circ(c, sd * 14 * s, 6 * s + Math.sin(z.anim * 8 + sd) * 2, 5 * s); c.fill(); c.stroke(); }
+    if (!(z.windup > 0)) for (const sd of [-1, 1]) { c.fillStyle = fur; circ(c, sd * 14 * s, 6 * s + Math.sin(z.anim * 8 + sd) * 2, 5 * s); c.fill(); c.stroke(); }
     c.beginPath(); c.ellipse(0, 1 * s, 14 * s, 12 * s, 0, 0, Math.PI * 2); c.fillStyle = fur; c.fill(); c.stroke();
     c.fillStyle = '#8A8E96'; c.beginPath(); c.ellipse(0, -2 * s, 10 * s, 5 * s, 0, Math.PI, Math.PI * 2); c.fill();      // silver back
     c.fillStyle = '#6E6A66'; c.beginPath(); c.ellipse(0, 5 * s, 7 * s, 5 * s, 0, 0, Math.PI * 2); c.fill();
+    if (z.windup > 0) {   // pounding his chest: fists drum on it, with little impact lines
+      for (const sd of [-1, 1]) {
+        const up = Math.sin(t * 24) * sd > 0, fx = sd * (up ? 8 : 5) * s, fy = (up ? -6 : 1) * s;
+        c.strokeStyle = INK; c.lineWidth = 2.5; c.fillStyle = fur; circ(c, fx, fy, 5.2 * s); c.fill(); c.stroke();
+        if (!up) { c.strokeStyle = '#FFE27A'; c.lineWidth = 2; for (const k of [-0.6, 0, 0.6]) { const a = (sd > 0 ? 0 : Math.PI) + k; c.beginPath(); c.moveTo(fx + Math.cos(a) * 7 * s, fy + Math.sin(a) * 7 * s); c.lineTo(fx + Math.cos(a) * 11 * s, fy + Math.sin(a) * 11 * s); c.stroke(); } }
+      }
+      c.strokeStyle = INK; c.lineWidth = 2.5;
+    }
     circ(c, 0, -10 * s, 9 * s); c.fillStyle = fur; c.fill(); c.stroke();
     c.fillStyle = '#6E6A66'; c.beginPath(); c.ellipse(0, -7 * s, 6 * s, 5 * s, 0, 0, Math.PI * 2); c.fill();
     c.fillStyle = INK; c.fillRect(-3 * s, -4.5 * s, 6 * s, 1.5 * s);
@@ -3784,6 +3804,8 @@ function consume() {
       if (Math.random() < 0.6) popups.push({ x: ev.z.x, y: ev.z.y - 34, text: ['HUP!', 'WHEE!', 'MISSED ME!', 'TA-DA!'][Math.floor(Math.random() * 4)], t: 0, life: 0.8, color: '#F2C230', size: 13 });
       for (let i = 0; i < 6; i++) particles.push({ kind: 'star', x: ev.z.x, y: ev.z.y - 8, vx: rand(-90, 90), vy: rand(-120, 0), life: 0.4, max: 0.4, c: i % 2 ? '#E5432D' : '#F2C230', r: 3, post: true, fr: 0.9 });
     }
+    else if (ev.e === 'pound') { kick(0.2); popups.push({ x: ev.z.x, y: ev.z.y - ev.z.r * 2.9, text: 'THUMP THUMP!', t: 0, life: 1.0, color: '#FFE27A', size: 13 }); rings.push({ x: ev.z.x, y: ev.z.y, r0: 10, r1: 70, w: 4, t: 0, dur: 0.5, col: '#FFE27A' }); }
+    else if (ev.e === 'pant') { popups.push({ x: ev.z.x, y: ev.z.y - ev.z.r * 2.2, text: ev.z.type === 'silverback' ? 'HUFF... HUFF...' : 'PHEW!', t: 0, life: 0.9, color: '#BFE6FF', size: 12 }); }
     else if (ev.e === 'dizzy') { popups.push({ x: ev.z.x, y: ev.z.y - 36, text: 'DIZZY!', t: 0, life: 0.9, color: '#FFE27A', size: 14 }); }
     else if (ev.e === 'pumpkinPop') {
       kick(0.25); popups.push({ x: ev.z.x, y: ev.z.y - 30, text: 'POP!', t: 0, life: 0.9, color: '#F29A2A', size: 18 });
