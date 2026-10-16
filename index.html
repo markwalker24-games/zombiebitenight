@@ -302,26 +302,34 @@ function buildParkingMap() {
   rect(0, 0, 29, 0, 'H'); rect(0, 79, 29, 79, 'H'); rect(0, 0, 0, 79, 'H'); rect(29, 0, 29, 79, 'H');
   rect(13, 0, 16, 0, '^');
   rect(1, 75, 28, 78, '#'); rect(1, 71, 28, 74, 'C'); rect(12, 75, 17, 75, 'C');
-  // rows of parked cars make a maze: each row leaves one gap, alternating sides
-  const rows = [66, 60, 54, 46, 40, 34, 26, 20, 14];
-  rows.forEach((y, i) => {
-    const gap = i % 2 ? [24, 27] : [2, 5];
-    for (let x = 1; x <= 28; x++) {
-      if (x >= gap[0] && x <= gap[1]) continue;
-      if ((x * 5 + y) % 13 === 0) { put(x, y, 'y'); put(x, y + 1, 'M'); continue; }
-      rect(x, y, x, y + 1, 'Q');
-    }
-  });
-  for (const [x, y] of [[14, 63], [8, 57], [20, 43], [10, 37], [18, 23], [6, 17]]) put(x, y, 'O');
-  for (const [x, y] of [[26, 63], [3, 57], [12, 44], [25, 37], [3, 24], [15, 17]]) put(x, y, '%');
+  const car = (x, y) => rect(x, y, x, y + 1, 'Q');
+  const carRow = (x0, x1, y, skip = []) => { for (let x = x0; x <= x1; x++) if (!skip.includes(x)) car(x, y); };
+  // STAFF PARKING (y 51-70): two back-to-back islands, a tree-lined median, and little clusters to weave between
+  carRow(3, 10, 64, [7]); carRow(3, 10, 66, [5]); carRow(18, 26, 64, [22]); carRow(18, 26, 66, [24]);
+  rect(8, 59, 21, 60, 'M'); for (const x of [9, 13, 17, 20]) put(x, 59, 'y');
+  carRow(2, 6, 53); carRow(13, 16, 54); carRow(22, 27, 53, [25]);
+  // VISITOR PARKING (y 31-49): a round planter in the middle, open on one side, with a little prize inside
+  for (let y = 35; y <= 45; y++) for (let x = 9; x <= 20; x++) {
+    const d = Math.hypot(x - 14.5, (y - 40) * 1.05);
+    if (d <= 4.2 && !(y >= 42 && x >= 14 && x <= 15)) g[y][x] = 'M';
+    if (d >= 3.0 && d <= 4.2 && !(y >= 42 && x >= 13 && x <= 16)) g[y][x] = 'y';   // a ring of spooky trees around a little clearing
+  }
+  carRow(2, 7, 33); carRow(21, 27, 33, [24]); carRow(2, 7, 46, [4]); carRow(22, 27, 46);
+  car(26, 39); car(3, 40); car(8, 39);
+  // STUDENT LOT (y 11-29): a messy pile-up of buses and abandoned cars with pockets to clear
+  rect(2, 20, 10, 21, 'U'); rect(17, 14, 25, 15, 'U');
+  carRow(13, 16, 25); carRow(20, 23, 22); car(4, 13); car(8, 16); car(26, 19); car(12, 12); car(5, 26); car(24, 26);
+  rect(27, 12, 28, 17, 'M'); put(28, 13, 'y'); put(27, 16, 'y');
+  for (const [x, y] of [[14, 62], [5, 57], [24, 57], [14, 47], [6, 25], [20, 27], [14, 18]]) put(x, y, 'O');
+  for (const [x, y] of [[26, 61], [3, 61], [27, 41], [2, 37], [11, 22], [16, 16]]) put(x, y, '%');
   rect(1, 50, 28, 50, '1'); rect(1, 30, 28, 30, '2'); rect(1, 10, 28, 10, '3');
   // 3: the bus loop (boss)
   rect(3, 4, 11, 5, 'U'); rect(18, 4, 26, 5, 'U'); put(14, 7, 'O');
-  const lights = [[14, 63, 150], [8, 57, 150], [20, 43, 150], [10, 37, 150], [18, 23, 150], [6, 17, 150], [14, 7, 200], [14, 73, 200]];
+  const lights = [[14, 62, 150], [5, 57, 150], [24, 57, 150], [14, 47, 150], [6, 25, 150], [20, 27, 150], [14, 18, 150], [14, 7, 200], [14, 73, 200]];
   return { id: 'parking', name: 'Parking Lot', grid: g, start: [14, 73], dark: 0.8, lights, boss: ['driver'],
     zones: [
       { name: 'STAFF PARKING', zombies: { walker: 6, runner: 2 }, survivors: [[27, 63]], pickups: [['ammo', 3, 69]] },
-      { name: 'VISITOR PARKING', zombies: { walker: 6, runner: 3, nerd: 2, cheer: 1 }, survivors: [[2, 43]], powers: [[14, 42]], pickups: [['health', 26, 48]] },
+      { name: 'VISITOR PARKING', zombies: { walker: 6, runner: 3, nerd: 2, cheer: 1 }, survivors: [[2, 43]], powers: [[14, 40]], pickups: [['health', 26, 48]] },
       { name: 'STUDENT LOT', zombies: { walker: 6, runner: 4, brute: 2, cheer: 2 }, spawns: [['crawler', 4, 22], ['crawler', 22, 28], ['crawler', 12, 16]], survivors: [[27, 23]], pickups: [['ammo', 14, 28]] },
       { name: 'BUS LOOP', zombies: { walker: 4, runner: 2 }, survivors: [[14, 2]], pickups: [['health', 2, 8], ['health', 27, 8]] }
     ] };
@@ -350,10 +358,10 @@ function buildStreetMap() {
   const lights = [[10, 10, 150], [30, 19, 150], [50, 10, 150], [70, 19, 150], [90, 10, 170]];
   return { id: 'street', name: 'Down the Street', grid: g, start: [3, 15], dark: 0.8, lights, boss: ['garbage'],
     zones: [
-      { name: 'MAPLE STREET', zombies: { walker: 6, runner: 2 }, survivors: [[12, 2]], pickups: [['ammo', 18, 27]] },
-      { name: 'OAK AVENUE', zombies: { walker: 6, runner: 3, cheer: 2 }, survivors: [[37, 27]], pickups: [['health', 25, 2]], powers: [[30, 14]] },
-      { name: 'THE CRASH', zombies: { walker: 7, runner: 3, brute: 2, nerd: 2 }, spawns: [['crawler', 44, 17], ['crawler', 55, 10]], survivors: [[60, 2]], pickups: [['ammo', 48, 27]] },
-      { name: 'ELM STREET', zombies: { walker: 6, runner: 4, cheer: 2, nerd: 2 }, survivors: [[66, 27]], pickups: [['health', 75, 2], ['ammo', 70, 27]] },
+      { name: 'MAPLE STREET', zombies: { walker: 6, runner: 2, pumpkin: 1 }, survivors: [[12, 2]], pickups: [['ammo', 18, 27]] },
+      { name: 'OAK AVENUE', zombies: { walker: 6, runner: 3, cheer: 2, pumpkin: 1 }, survivors: [[37, 27]], pickups: [['health', 25, 2]], powers: [[30, 14]] },
+      { name: 'THE CRASH', zombies: { walker: 6, runner: 3, brute: 2, nerd: 2, pumpkin: 2 }, spawns: [['crawler', 44, 17], ['crawler', 55, 10]], survivors: [[60, 2]], pickups: [['ammo', 48, 27]] },
+      { name: 'ELM STREET', zombies: { walker: 6, runner: 4, cheer: 2, nerd: 2, pumpkin: 1 }, survivors: [[66, 27]], pickups: [['health', 75, 2], ['ammo', 70, 27]] },
       { name: 'CITY LIMITS', zombies: { walker: 3, runner: 2 }, survivors: [[96, 27]], pickups: [['health', 82, 2], ['health', 82, 27]] }
     ] };
 }
@@ -385,12 +393,12 @@ function buildHouseMap() {
   rect(4, 3, 4, 4, 'Q'); rect(7, 3, 7, 4, 'Q'); rect(25, 2, 27, 2, 'S'); rect(25, 8, 27, 8, 'S'); rect(19, 9, 22, 9, 'F'); put(24, 5, '%'); put(2, 9, '%');
   return { id: 'house', name: 'Home Sweet Home', grid: g, start: [7, 33], dark: 0.84, lights: [], indoor: true, boss: ['housekeeper'],
     zones: [
-      { name: 'LIVING ROOM', zombies: { walker: 2 }, survivors: [[1, 33, 'grandma']], pickups: [['ammo', 13, 26]] },
-      { name: 'KITCHEN', zombies: { walker: 3 }, survivors: [[28, 34, 'mom']], pickups: [['health', 17, 33]] },
-      { name: 'HALLWAY', zombies: { walker: 1, runner: 1 }, survivors: [[11, 21, 'dog']] },
+      { name: 'LIVING ROOM', zombies: { walker: 2, ghost: 1 }, survivors: [[1, 33, 'grandma']], pickups: [['ammo', 13, 26]] },
+      { name: 'KITCHEN', zombies: { walker: 2, ghost: 1 }, survivors: [[28, 34, 'mom']], pickups: [['health', 17, 33]] },
+      { name: 'HALLWAY', zombies: { walker: 1, runner: 1, ghost: 1 }, survivors: [[11, 21, 'dog']] },
       { name: "KIDS' ROOM", zombies: { walker: 2 }, spawns: [['crawler', 5, 14]], survivors: [[9, 21, 'sis']], pickups: [['health', 1, 12]] },
-      { name: 'MASTER BEDROOM', zombies: { walker: 2, runner: 1 }, survivors: [[28, 22, 'dad']], pickups: [['ammo', 19, 12]], powers: [[23, 19]] },
-      { name: 'GARAGE', zombies: { walker: 2 }, pickups: [['ammo', 2, 2], ['health', 28, 10]] }
+      { name: 'MASTER BEDROOM', zombies: { walker: 1, runner: 1, ghost: 2 }, survivors: [[28, 22, 'dad']], pickups: [['ammo', 19, 12]], powers: [[23, 19]] },
+      { name: 'GARAGE', zombies: { walker: 2, pumpkin: 1 }, pickups: [['ammo', 2, 2], ['health', 28, 10]] }
     ] };
 }
 
@@ -493,12 +501,12 @@ function buildMallMap() {
   return { id: 'mall', name: 'The Shopping Mall', grid: g, start: [16, 55], dark: 0.82, lights: [], indoor: true, boss: ['mallcop'], noPacks: true,
     zones: [
       { name: 'MALL ENTRANCE', zombies: { walker: 3 }, pickups: [['ammo', 13, 39]] },
-      { name: 'FOOD COURT', zombies: { walker: 5, runner: 1 }, survivors: [[10, 40]], pickups: [['health', 5, 53]] },
-      { name: 'THE ARCADE', zombies: { walker: 4, nerd: 3 }, survivors: [[1, 19]], features: [['switch', 10, 19]] },
-      { name: 'CENTER COURT', zombies: { walker: 5, runner: 2, cheer: 2 }, pickups: [['ammo', 16, 35]], powers: [[16, 22]] },
-      { name: 'SPORTS STORE', zombies: { walker: 3, brute: 2 }, survivors: [[32, 35]], pickups: [['ammo', 32, 20]], features: [['alarm', 23, 32]] },
-      { name: 'TOY STORE', zombies: { walker: 3, runner: 2 }, spawns: [['crawler', 27, 44], ['crawler', 31, 50]], survivors: [[32, 38], [23, 56]], pickups: [['health', 27, 55]] },
-      { name: 'DEPARTMENT STORE', zombies: { walker: 3 }, pickups: [['health', 1, 17], ['ammo', 32, 17]] }
+      { name: 'FOOD COURT', zombies: { walker: 4, runner: 1, cart: 1 }, survivors: [[10, 40]], pickups: [['health', 5, 53]] },
+      { name: 'THE ARCADE', zombies: { walker: 3, nerd: 3, ghost: 1 }, survivors: [[1, 19]], features: [['switch', 10, 19]] },
+      { name: 'CENTER COURT', zombies: { walker: 4, runner: 2, cheer: 2, cart: 2 }, pickups: [['ammo', 16, 35]], powers: [[16, 22]] },
+      { name: 'SPORTS STORE', zombies: { walker: 3, brute: 2, pumpkin: 1 }, survivors: [[32, 35]], pickups: [['ammo', 32, 20]], features: [['alarm', 23, 32]] },
+      { name: 'TOY STORE', zombies: { walker: 2, runner: 2, cart: 1, ghost: 1 }, spawns: [['crawler', 27, 44], ['crawler', 31, 50]], survivors: [[32, 38], [23, 56]], pickups: [['health', 27, 55]] },
+      { name: 'DEPARTMENT STORE', zombies: { walker: 2, cart: 2 }, pickups: [['health', 1, 17], ['ammo', 32, 17]] }
     ] };
 }
 
@@ -526,10 +534,10 @@ function buildParkMap() {
   rect(13, 0, 20, 0, '^');
   return { id: 'park', name: 'The City Park', grid: g, start: [16, 77], dark: 0.76, lights: [[16, 74, 200], [16, 58, 220], [16, 38, 220], [16, 20, 220], [16, 6, 240]], boss: ['icecream'], noPacks: true,
     zones: [
-      { name: 'PARK ENTRANCE', zombies: { walker: 4, runner: 1 }, pickups: [['ammo', 31, 73]] },
-      { name: 'PLAYGROUND', zombies: { walker: 6, runner: 3, cheer: 1 }, spawns: [['crawler', 15, 58]], survivors: [[31, 64], [2, 53]], pickups: [['health', 16, 62]] },
-      { name: 'DUCK POND', zombies: { walker: 6, runner: 3, nerd: 2 }, survivors: [[31, 46]], pickups: [['ammo', 2, 31]], powers: [[18, 38]] },
-      { name: 'PICNIC GROVE', zombies: { walker: 6, brute: 2, runner: 2 }, survivors: [[1, 14]], pickups: [['health', 31, 26]], features: [['alarm', 32, 19]] },
+      { name: 'PARK ENTRANCE', zombies: { walker: 4, runner: 1, pumpkin: 1 }, pickups: [['ammo', 31, 73]] },
+      { name: 'PLAYGROUND', zombies: { walker: 5, runner: 3, cheer: 2, ghost: 1 }, spawns: [['crawler', 15, 58]], survivors: [[31, 64], [2, 53]], pickups: [['health', 16, 62]] },
+      { name: 'DUCK POND', zombies: { walker: 5, runner: 3, nerd: 2, ghost: 2 }, survivors: [[31, 46]], pickups: [['ammo', 2, 31]], powers: [[18, 38]] },
+      { name: 'PICNIC GROVE', zombies: { walker: 5, brute: 2, runner: 2, pumpkin: 2 }, survivors: [[1, 14]], pickups: [['health', 31, 26]], features: [['alarm', 32, 19]] },
       { name: 'THE BANDSTAND', zombies: { walker: 3 }, survivors: [[32, 1]], pickups: [['ammo', 1, 12], ['health', 32, 12]] }
     ] };
 }
@@ -608,19 +616,19 @@ const LEVELS = [
   { map: 'gym',     name: 'Locker Room & Gym', speed: 1.05, drop: 0.015, seed: 23, boss: 1.1,
     hint: 'Crawlers hide in the stalls. Watch for eyes in the dark.' },
   { map: 'field',   name: 'Football Field',    speed: 1.1,  drop: 0.02,  seed: 37, boss: 1.15,
-    hint: 'Cheerleaders pump up every zombie near them. Take them out first!' },
+    hint: 'Cheerleaders backflip out of the way of your shots. Keep shooting until they get dizzy!' },
   { map: 'parking', name: 'Parking Lot',       speed: 1.15, drop: 0.025, seed: 53, boss: 1.25,
-    hint: 'The cars form a maze. Gas cans explode. Get everyone to the road!' },
+    hint: 'Weave between the parked cars and the spooky grove. Gas cans explode!' },
   { map: 'street',  name: 'Down the Street',   speed: 1.2,  drop: 0.025, seed: 71, boss: 1.3,
-    hint: 'Fight your way home, block by block. Listen for the garbage truck...' },
+    hint: 'Fight your way home. Watch out for Pumpkin Heads: pop them from far away!' },
   { map: 'house',   name: 'Home Sweet Home',     speed: 1.15, drop: 0.025, seed: 83, boss: 1.2,
-    hint: 'Find your whole family: Grandma, Mom, the dog, your sister and Dad. Then get to the car!' },
+    hint: 'Find your whole family, then get to the car. Sheet Ghosts only take hits when they are solid!' },
   { map: 'drive',   name: 'Highway to the Zoo',  speed: 1,    drop: 0,     seed: 97,
     hint: 'Steer with the stick. Run zombies over at speed, but slow bumps and crashes hurt the car!' },
   { map: 'zoo',     name: 'The City Zoo',        speed: 1.2,  drop: 0.025, seed: 101, boss: 1.3,
     hint: 'The animals got out, and they are zombies too. Monkeys are fast, lions are faster!' },
   { map: 'mall',    name: 'The Shopping Mall',   speed: 1.25, drop: 0.03,  seed: 113, boss: 1.35,
-    hint: 'Shop till you drop. Arcade machines break open for snacks.' },
+    hint: 'Cart Pushers block shots from the front. Get around to the side!' },
   { map: 'park',    name: 'The City Park',       speed: 1.3,  drop: 0.03,  seed: 127, boss: 1.4,
     hint: 'Last stop: the park. Watch the bushes, and listen for the ice cream jingle...' }
 ];
@@ -632,6 +640,9 @@ const ZT = {
   nerd:    { r: 11, hp: 2, speed: 44, dmg: 1, color: '#8DB87C' },
   crawler: { r: 10, hp: 2, speed: 96, dmg: 1, color: '#90A86A' },
   cheer:   { r: 11, hp: 3, speed: 60, dmg: 1, color: '#9CC27A' },
+  pumpkin: { r: 16, hp: 6, speed: 40, dmg: 1, color: '#8DB87C' },   // giant jack-o'-lantern costume: pops into three minis
+  ghost:   { r: 11, hp: 3, speed: 64, dmg: 1, color: '#9CC27A' },   // bedsheet ghost: fades out, and shots pass through while it's faded
+  cart:    { r: 13, hp: 5, speed: 54, dmg: 1, color: '#8FB87A' },   // shopping cart pusher: the cart blocks shots from the front, then it charges
   janitor: { r: 22, hp: 45, speed: 58, dmg: 2, color: '#7FA86A', boss: 'THE JANITOR', sub: 'Strike when his mop is down!' },
   coach:   { r: 20, hp: 50, speed: 56, dmg: 2, color: '#86AE6E', boss: 'THE COACH', sub: 'Drop and give him twenty!' },
   driver:  { r: 27, hp: 60, speed: 40, dmg: 2, color: '#86A86A', boss: 'THE BUS DRIVER', sub: 'Last stop. Everybody off!' },
@@ -713,6 +724,12 @@ function makeWorld(L, unlocked) {
   return w;
 }
 
+const ZOMBIE_TIPS = {
+  cheer: 'Cheerleader! She backflips away from your shots. Keep shooting: after two flips she gets dizzy.',
+  pumpkin: 'Pumpkin Head! When it pops, three little zombies spill out. Back up and pop it from far away.',
+  ghost: 'Sheet Ghost! Shots go right through it while it fades. Fire when it turns solid.',
+  cart: 'Cart Pusher! Its cart blocks shots from the front. Get around to the side, and dodge when it charges.'
+};
 const ALARM_R = 140;   // sprinklers only cover the area right around you
 function grantPower(w, key) {
   const me = w.me, P = POWERS[key];
@@ -808,6 +825,7 @@ function dropNeeds(w) {
 function killZombie(w, z) {
   if (z.dead) return;
   z.dead = true; w.kills++; w.events.push({ e: 'kill', z });
+  if (z.type === 'pumpkin') { summonMinis(w, z, 3, 99); w.events.push({ e: 'pumpkinPop', z }); }
   // every zombie is a student with a backpack: loot it
   const drop = (type, extra) => w.pickups.push({ type, x: z.x + rand(-8, 8), y: z.y + rand(-4, 8), taken: false, ttl: 22, ...extra });
   if (ZT[z.type].boss) { drop('ammo', { amount: 40 }); drop('health', { heal: 3 }); return; }
@@ -819,7 +837,7 @@ function killZombie(w, z) {
     if (N.health > 0.25) { drop('health', { heal: 1 }); drop(R() < N.health ? 'health' : 'ammo', { heal: 1, amount: 15 }); }
     else { drop('ammo', { amount: 25 }); if (R() < 0.3) drop('health', { heal: 1 }); }
   } else {
-    const base = { walker: 0.75, runner: 0.65, mini: 0.4, nerd: 0.8, crawler: 0.6, cheer: 0.8, lion: 0.7, monkey: 0.35, penguin: 0.35, dust: 0.25 }[z.type] || 0.6;
+    const base = { walker: 0.75, runner: 0.65, mini: 0.4, nerd: 0.8, crawler: 0.6, cheer: 0.8, pumpkin: 0.9, ghost: 0.75, cart: 0.85, lion: 0.7, monkey: 0.35, penguin: 0.35, dust: 0.25 }[z.type] || 0.6;
     // drop more often when you're in trouble, a bit less when you're cruising
     const need = Math.max(N.health, N.ammo), chance = Math.min(0.95, base * (0.6 + need * 0.7));
     if (R() < chance) {
@@ -978,8 +996,14 @@ function stepShots(w, dt) {
     for (const z of w.zombies) {
       if (dead || z.dead || s.hitSet.has(z)) continue;
       if (Math.hypot(z.x - s.x, z.y - 6 - s.y) < z.r + s.r + 2) {
+        if (z.flip > 0 || z.phased) continue;   // mid-backflip, or a faded ghost: the shot sails right through
+        if (z.type === 'cheer' && !(z.flipCd > 0) && !(z.stun > 0) && !z.dormant) { cheerFlip(w, z, s); s.hitSet.add(z); continue; }
+        if (z.type === 'cart' && s.wpn !== 'dodgeball') {
+          const sd = Math.hypot(s.vx, s.vy) || 1, fa = z.fa ?? Math.atan2(z.vy || 1, z.vx || 0);
+          if ((s.vx / sd) * Math.cos(fa) + (s.vy / sd) * Math.sin(fa) < -0.35) { dead = true; w.events.push({ e: 'clang', x: s.x, y: s.y }); continue; }   // bounced off the cart
+        }
         z.hp -= s.dmg; z.hurt = 0.12; z.aggro = 10; z.notice = 0; z.dormant = false; s.hitSet.add(z);
-        const big = z.type === 'brute' || ZT[z.type].boss, d = Math.hypot(s.vx, s.vy) || 1;
+        const big = z.type === 'brute' || z.type === 'pumpkin' || z.type === 'cart' || ZT[z.type].boss, d = Math.hypot(s.vx, s.vy) || 1;
         const k = (s.push || 10) * (ZT[z.type].boss ? 0.15 : big ? 0.4 : 1);
         slide(z, s.vx / d * k, s.vy / d * k, bodyR(z));
         if (!(z.charge > 0)) z.stun = Math.max(z.stun, s.wpn === 'extinguisher' ? 0.12 : big ? 0.03 : 0.15);
@@ -1046,12 +1070,12 @@ function janitorThink(w, z, dt, d, dx, dy, pace) {
     ease(MOP_IDLE, 8);
     let da = aim - m.cur; da = Math.atan2(Math.sin(da), Math.cos(da)); m.cur += da * Math.min(1, dt * 6);   // mop pointed at you
     if (me.hp > 0 && m.cd <= 0 && d < MOP_REACH + 34) {
-      m.ph = 'wind'; m.t = (angry ? 0.42 : 0.55) / quick; m.a = aim; m.dir = Math.random() < 0.5 ? 1 : -1; m.combo = angry ? 1 : 0;
+      m.ph = 'wind'; m.t = (angry ? 0.75 : 0.95) / quick; m.a = aim; m.dir = Math.random() < 0.5 ? 1 : -1; m.combo = angry ? 1 : 0;
       if (Math.random() < 0.4) w.events.push({ e: 'bossYell', z, text: ['MY FLOORS!', 'WIPE OUT!', 'MIND THE MOP!', 'CLEANUP TIME!'][Math.floor(Math.random() * 4)] });
       return true;
     }
     if (me.hp > 0 && m.cd <= 0 && d >= MOP_REACH + 34 && d < MOP_JAB + 30 && los(z.x, z.y - 8, me.x, me.y - 6)) {
-      m.ph = 'jwind'; m.t = 0.5 / quick; m.a = aim; return true;
+      m.ph = 'jwind'; m.t = 0.85 / quick; m.a = aim; return true;
     }
     return false;   // otherwise he shuffles after you like any boss
   }
@@ -1071,7 +1095,7 @@ function janitorThink(w, z, dt, d, dx, dy, pace) {
     m.prev = k;
     if (m.t <= 0) {
       addPuddle(w, z.x + Math.cos(m.cur) * MOP_REACH * 0.82, z.y + Math.sin(m.cur) * MOP_REACH * 0.82);
-      if (m.combo > 0) { m.combo--; m.ph = 'wind'; m.t = 0.18; m.dir = -m.dir; m.a = aim; }   // angry: straight back the other way
+      if (m.combo > 0) { m.combo--; m.ph = 'wind'; m.t = 0.45; m.dir = -m.dir; m.a = aim; }   // angry: straight back the other way
       else { m.ph = 'rest'; m.t = angry ? 0.8 : 1.05; }
     }
     return true;
@@ -1215,7 +1239,44 @@ function driveCar(w, move, ml, dt) {
   }
   me.moving = me.spd > 20; me.walk += dt * me.spd / 20;
 }
+// cheerleaders are limber: shoot at one and she backflips out of the way. Two flips in a row and she lands dizzy: that's your moment
+const FLIP_T = 0.5;
+function cheerFlip(w, z, s) {
+  const d = Math.hypot(s.vx, s.vy) || 1, ux = s.vx / d, uy = s.vy / d, side = Math.random() < 0.5 ? 1 : -1;
+  let fx = ux * 0.55 - uy * side * 0.85, fy = uy * 0.55 + ux * side * 0.85;
+  if (collides(z.x + fx * 60, z.y + fy * 60, z.r)) { fx = ux * 0.55 + uy * side * 0.85; fy = uy * 0.55 - ux * side * 0.85; }
+  const l = Math.hypot(fx, fy) || 1;
+  z.flip = FLIP_T; z.fvx = fx / l * 170; z.fvy = fy / l * 170; z.flipDir = (fx >= 0 ? 1 : -1); z.flipCd = 0.1; z.flips = (z.flips ?? 2) - 1; z.flipRegen = 0;
+  z.aggro = 10; z.notice = 0;
+  w.events.push({ e: 'flip', z });
+}
+// shopping cart pushers turn slowly (so you can get around the cart), and every so often rev up and charge
+function cartThink(w, z, dt) {
+  const me = w.me, dx = me.x - z.x, dy = me.y - z.y, d = Math.hypot(dx, dy);
+  if (z.fa === undefined) z.fa = Math.atan2(z.vy || 1, z.vx || 0);
+  z.cartT = (z.cartT ?? rand(2.5, 4)) - dt;
+  if (z.rush > 0) {
+    z.rush -= dt;
+    const sp = 250 * dt, bx = z.x, by = z.y;
+    slide(z, Math.cos(z.fa) * sp, Math.sin(z.fa) * sp, bodyR(z)); z.vx = Math.cos(z.fa); z.vy = Math.sin(z.fa);
+    if (Math.hypot(z.x - bx, z.y - by) < sp * 0.3) { z.rush = 0; z.stun = 1.5; w.events.push({ e: 'cartCrash', z }); }   // smashed into something
+    return true;
+  }
+  if (z.cwind > 0) {
+    z.cwind -= dt;
+    let da = Math.atan2(dy, dx) - z.fa; da = Math.atan2(Math.sin(da), Math.cos(da)); z.fa += clamp(da, -5 * dt, 5 * dt);
+    z.vx = Math.cos(z.fa); z.vy = Math.sin(z.fa);
+    if (z.cwind <= 0) z.rush = 0.85;
+    return true;
+  }
+  let da = Math.atan2(z.vy || 0.0001, z.vx || 0.0001) - z.fa; da = Math.atan2(Math.sin(da), Math.cos(da)); z.fa += clamp(da, -2.2 * dt, 2.2 * dt);
+  if (z.aggro > 0 && me.hp > 0 && z.cartT <= 0 && d < 280 && d > 70 && los(z.x, z.y - 6, me.x, me.y - 6)) {
+    z.cartT = rand(4.5, 6.5); z.cwind = 0.75; w.events.push({ e: 'cartRev', z }); return true;
+  }
+  return false;
+}
 function zContact(w, z) {
+  if (z.phased || z.flip > 0) return;
   const me = w.me, d2 = Math.hypot(me.x - z.x, me.y - z.y), minD = z.r + (MAP.car ? CAR_R + 4 : P_R);
   if (MAP.car && me.hp > 0 && d2 < minD + 4 && me.spd > 110) {
     // run them over
@@ -1331,14 +1392,26 @@ function step(w, dt, move, aim) {
     EXIT_OPEN = true; w.events.push({ e: 'exitOpen' });
     for (const [x, y] of MAP.exit) w.events.push({ e: 'retile', tx: x, ty: y });
   }
-  // cheerleaders pump up the zombies around them
-  const cheers = w.zombies.filter(z => z.type === 'cheer' && !z.dead);
-  for (const z of w.zombies) z.buff = cheers.some(c => c !== z && Math.hypot(c.x - z.x, c.y - z.y) < 120);
+  // sheet ghosts fade in and out: while faded, shots pass right through them (and they can't bite)
+  for (const z of w.zombies) if (z.type === 'ghost' && !z.dead) {
+    z.ghostT = (z.ghostT ?? rand(0, 4)) + dt;
+    const cyc = z.ghostT % 4.2;
+    z.fade = cyc < 2.4 ? 1 : cyc < 2.7 ? 1 - (cyc - 2.4) / 0.3 * 0.82 : cyc < 3.85 ? 0.18 : 0.18 + (cyc - 3.85) / 0.35 * 0.82;
+    z.phased = cyc >= 2.55 && cyc < 3.95;
+  }
   // survivors
   stepSurvivors(w, dt);
   // zombies
   for (const z of w.zombies) {
     z.anim += dt; if (z.hurt > 0) z.hurt -= dt; if (z.stun > 0) { z.stun -= dt; continue; }
+    if (z.flip > 0) {   // mid-backflip
+      z.flip -= dt; slide(z, z.fvx * dt, z.fvy * dt, bodyR(z));
+      if (z.flip <= 0 && z.flips <= 0) { z.stun = 1.2; z.dizzyUntil = w.t + 1.2; w.events.push({ e: 'dizzy', z }); }   // out of flips: lands dizzy
+      continue;
+    }
+    if (z.flipCd > 0) z.flipCd -= dt;
+    if (z.type === 'cheer' && (z.flips ?? 2) < 2 && (z.flipRegen = (z.flipRegen || 0) + dt) > 2.6) { z.flips = 2; z.flipRegen = 0; }
+    if (z.type === 'cart' && cartThink(w, z, dt)) { zContact(w, z); continue; }
     if (z.boss && bossThink(w, z, dt)) { zContact(w, z); continue; }
     const dx = me.x - z.x, dy = me.y - z.y, d = Math.hypot(dx, dy);
     if (z.dormant) {
@@ -1370,7 +1443,7 @@ function step(w, dt, move, aim) {
         if (d < 64 || ((inBeam || d < 115) && seeLos())) { z.notice = d < 64 ? 0.25 : rand(0.55, 0.85); continue; }
       }
     }
-    let mx = 0, my = 0, sp = z.speed * (z.buff ? 1.35 : 1);
+    let mx = 0, my = 0, sp = z.speed * (z.phased ? 1.35 : 1);
     if (z.aggro > 0 && me.hp > 0) {
       // go for a survivor following you if one is closer
       let tgt = null, td = d;
@@ -2228,9 +2301,8 @@ function renderMap() {
   }
   if (MAP.id === 'parking') {
     c.strokeStyle = 'rgba(255,255,255,.65)';
-    for (const ry of [66, 60, 54, 46, 40, 34, 26, 20, 14]) for (let x = 1; x <= 29; x++) { c.beginPath(); c.moveTo(x * TS, ry * TS + 4); c.lineTo(x * TS, (ry + 2) * TS - 4); c.stroke(); }
-    c.strokeStyle = 'rgba(242,194,48,.8)'; c.setLineDash([16, 12]);
-    for (const ly of [64, 58, 44, 38, 24, 18]) { c.beginPath(); c.moveTo(1 * TS, ly * TS); c.lineTo(29 * TS, ly * TS); c.stroke(); }
+    // painted stall lines on both sides of every parked car (empty stalls in a row get lines too)
+    for (const b of blocks()) if (b.t === 'Q') for (const lx of [b.x, b.x + 1]) { c.beginPath(); c.moveTo(lx * TS, b.y * TS + 4); c.lineTo(lx * TS, (b.y + 2) * TS - 4); c.stroke(); }
     c.setLineDash([]); c.strokeStyle = 'rgba(242,194,48,.9)'; c.lineWidth = 4; c.strokeRect(2 * TS, 2.5 * TS, 26 * TS, 6 * TS); c.lineWidth = 2;
   }
   drawDecals(c);
@@ -2285,6 +2357,7 @@ function zLook(z) {
   if (z.type === 'brute') { L.cost = 'helmet'; L.skin = '#7FAE6A'; L.shirt = '#B0465A'; }
   if (z.type === 'nerd') { L.cost = 'nerd'; L.shirt = '#E8E4DA'; }
   if (z.type === 'cheer') { L.cost = 'cheer'; L.shirt = '#C8372D'; L.hair = '#E8B23A'; }
+  if (z.type === 'cart') { L.cost = 'none'; L.shirt = '#E8833A'; }
   if (z.type === 'crawler') L.cost = pick(['none', 'none', 'mummy', 'skeleton']);
   const shirts = { witch: '#4A3570', mummy: '#E6DFC8', vampire: '#2A2433', skeleton: '#26262E', pumpkin: '#E07A1F', pirate: '#F4F1E6', devil: '#B8302A', cat: '#2A2A33' };
   if (shirts[L.cost]) L.shirt = shirts[L.cost];
@@ -2404,6 +2477,9 @@ function drawZombie(c, z, t) {
   if (z.boss) return drawBoss(c, z, t);
   if (z.type === 'crawler') return drawCrawler(c, z, t);
   if (ZT[z.type].animal) return drawAnimal(c, z, t);
+  if (z.type === 'pumpkin') return drawPumpkinZ(c, z, t);
+  if (z.type === 'ghost') return drawGhostZ(c, z, t);
+  if (z.type === 'cart' && !z._body) return drawCartZ(c, z, t);
   const L = zLook(z), s = z.r / 12, hurt = z.hurt > 0;
   const ang = Math.atan2(z.vy || 1, z.vx || 0.0001), ax = Math.cos(ang), ay = Math.sin(ang);
   const ph = z.anim * (z.type === 'runner' ? 13 : z.type === 'mini' ? 12 : 6.5) + L.ph;
@@ -2414,6 +2490,7 @@ function drawZombie(c, z, t) {
   if (z.buff) { c.save(); c.strokeStyle = `rgba(242,194,48,${0.35 + Math.sin(t * 10) * 0.2})`; c.lineWidth = 2; c.setLineDash([4, 4]); c.lineDashOffset = -t * 20; circ(c, z.x, z.y + 4, z.r + 7); c.stroke(); c.restore(); }
   c.save(); c.translate(z.x, z.y);
   c.fillStyle = 'rgba(10,5,20,.38)'; c.beginPath(); c.ellipse(0, 11 * s, 11 * s, 4.2 * s, 0, 0, Math.PI * 2); c.fill();
+  if (z.flip > 0) { const q = 1 - z.flip / FLIP_T; c.translate(0, -Math.sin(q * Math.PI) * 20 * s); c.rotate((z.flipDir || 1) * q * Math.PI * 2); }
   const foot = 11 * s; c.translate(0, foot); c.scale(sx, sy); c.translate(0, -foot);
   c.lineJoin = 'round'; c.lineCap = 'round';
   // legs shuffling
@@ -2448,7 +2525,13 @@ function drawZombie(c, z, t) {
   c.save(); c.translate(hx, hy); const E = drawZHead(c, z, L, s, ax, ay, back, hurt); c.restore();
   c.restore();
   // remember where the eyes are in the world so they can glow through the dark
-  z.eyes = E.map(([ex, ey, er]) => [z.x + sx * (ex + hx), z.y + foot + sy * (ey + hy - bob - foot), er]);
+  z.eyes = z.flip > 0 ? [] : E.map(([ex, ey, er]) => [z.x + sx * (ex + hx), z.y + foot + sy * (ey + hy - bob - foot), er]);
+  if (z.dizzyUntil > W.t) for (let i = 0; i < 3; i++) {   // dizzy stars
+    const a = t * 6 + i * 2.1, px = z.x + Math.cos(a) * 11 * s, py = z.y - 24 * s + Math.sin(a) * 3.5 * s;
+    c.save(); c.translate(px, py); c.rotate(t * 4); c.fillStyle = '#FFE27A'; c.strokeStyle = INK; c.lineWidth = 1.2; c.beginPath();
+    for (let k = 0; k < 10; k++) { const r2 = k % 2 ? 1.6 : 4, a2 = k * Math.PI / 5; c.lineTo(Math.cos(a2) * r2, Math.sin(a2) * r2); }
+    c.closePath(); c.fill(); c.stroke(); c.restore();
+  }
   if ((z.type === 'brute') && z.hp < ZT[z.type].hp) {
     const w2 = 30, f = Math.max(0, z.hp / ZT[z.type].hp);
     c.fillStyle = 'rgba(10,5,20,.8)'; rr(c, z.x - w2 / 2 - 1, z.y - 40, w2 + 2, 6, 3); c.fill(); c.fillStyle = f > 0.4 ? '#7BD84A' : '#F2C230'; rr(c, z.x - w2 / 2, z.y - 39, w2 * f, 4, 2); c.fill();
@@ -2511,6 +2594,100 @@ function drawAnimal(c, z, t) {
   c.restore();
   if (z.type === 'ape' && z.hp < ZT.ape.hp) { c.fillStyle = '#000'; c.fillRect(z.x - 15, z.y - 30, 30, 5); c.fillStyle = '#7BD84A'; c.fillRect(z.x - 14, z.y - 29, 28 * z.hp / ZT.ape.hp, 3); }
 }
+// a zombie in a giant inflatable jack-o'-lantern costume
+function drawPumpkinZ(c, z, t) {
+  const s = z.r / 16, hurt = z.hurt > 0, ang = Math.atan2(z.vy || 1, z.vx || 0.0001), ax = Math.cos(ang);
+  const step = Math.sin(z.anim * 6), bob = Math.abs(step) * 1.5 * s;
+  c.save(); c.translate(z.x, z.y); c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK;
+  c.fillStyle = 'rgba(10,5,20,.38)'; c.beginPath(); c.ellipse(0, 14 * s, 15 * s, 5 * s, 0, 0, Math.PI * 2); c.fill();
+  for (const sd of [-1, 1]) { c.fillStyle = '#3B3552'; rr(c, sd * 5 * s - 2.5 * s, 6 * s + (sd * step > 0 ? -1.5 * s : 0), 5 * s, 8 * s, 2 * s); c.fill(); c.lineWidth = 2; c.stroke(); }
+  c.translate(0, -bob);
+  for (const sd of [-1, 1]) {   // zombie arms poking out the sides
+    const hx = sd * 21 * s + ax * 3 * s, hy = -3 * s + Math.sin(z.anim * 6 + sd) * 2 * s;
+    c.strokeStyle = INK; c.lineWidth = 6 * s; c.beginPath(); c.moveTo(sd * 12 * s, -1 * s); c.lineTo(hx, hy); c.stroke();
+    c.strokeStyle = hurt ? '#FFF' : ZT.pumpkin.color; c.lineWidth = 3.6 * s; c.stroke();
+    c.fillStyle = hurt ? '#FFF' : ZT.pumpkin.color; c.strokeStyle = INK; c.lineWidth = 1.6; circ(c, hx, hy, 2.8 * s); c.fill(); c.stroke();
+  }
+  // the pumpkin: three fat ribs and a stem
+  c.lineWidth = 2.4;
+  for (const [ox, rx, col] of [[-6.5, 8, '#C9651A'], [6.5, 8, '#C9651A'], [0, 9.5, '#E8842A']]) {
+    c.beginPath(); c.ellipse(ox * s, -4 * s, rx * s, 12 * s, 0, 0, Math.PI * 2); c.fillStyle = hurt ? '#FFF' : col; c.fill(); c.strokeStyle = INK; c.stroke();
+  }
+  c.fillStyle = 'rgba(255,220,150,.25)'; c.beginPath(); c.ellipse(-3 * s, -10 * s, 3 * s, 4.5 * s, -0.3, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#5A7A2E'; rr(c, -1.8 * s, -19.5 * s, 3.6 * s, 5 * s, 1.2 * s); c.fill(); c.stroke();
+  c.strokeStyle = '#5A7A2E'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(1.5 * s, -18 * s); c.quadraticCurveTo(6 * s, -22 * s, 5 * s, -16 * s); c.stroke();
+  // carved face, glowing from inside
+  const glow = 0.8 + Math.sin(t * 7 + z.anim) * 0.2;
+  c.fillStyle = `rgba(255,${200 + glow * 40},90,1)`; c.strokeStyle = INK; c.lineWidth = 1.5;
+  for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 2 * s, -6 * s); c.lineTo(sd * 7 * s, -6 * s); c.lineTo(sd * 4.5 * s, -10.5 * s); c.closePath(); c.fill(); c.stroke(); }
+  c.beginPath(); c.moveTo(-1.2 * s, -3.4 * s); c.lineTo(1.2 * s, -3.4 * s); c.lineTo(0, -5.4 * s); c.closePath(); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(-7 * s, 0); c.quadraticCurveTo(0, 6 * s, 7 * s, 0); c.lineTo(5 * s, 1 * s); c.lineTo(4 * s, -0.3 * s); c.lineTo(2 * s, 2 * s); c.lineTo(0, 0.5 * s); c.lineTo(-2 * s, 2 * s); c.lineTo(-4 * s, -0.3 * s); c.lineTo(-5 * s, 1 * s); c.closePath(); c.fill(); c.stroke();
+  // cracks as it takes hits
+  const dmg = 1 - z.hp / z.maxHp;
+  c.strokeStyle = INK; c.lineWidth = 1.4;
+  if (dmg > 0.3) { c.beginPath(); c.moveTo(6 * s, -14 * s); c.lineTo(4 * s, -11 * s); c.lineTo(6 * s, -9 * s); c.lineTo(4.5 * s, -7.5 * s); c.stroke(); }
+  if (dmg > 0.6) { c.beginPath(); c.moveTo(-9 * s, 2 * s); c.lineTo(-6.5 * s, 0); c.lineTo(-8 * s, -3 * s); c.lineTo(-6 * s, -5 * s); c.stroke(); }
+  c.restore();
+  z.eyes = [[z.x - 4.5 * s, z.y - 7.5 * s - bob, 2.2 * s], [z.x + 4.5 * s, z.y - 7.5 * s - bob, 2.2 * s]];
+}
+// a zombie under a bedsheet: it fades out (shots pass through), then pops back in
+function drawGhostZ(c, z, t) {
+  const s = z.r / 11, fade = z.fade ?? 1, hurt = z.hurt > 0, ang = Math.atan2(z.vy || 1, z.vx || 0.0001), ax = Math.cos(ang), ay = Math.sin(ang);
+  const hover = Math.sin(z.anim * 3) * 2 * s;
+  c.save(); c.translate(z.x, z.y); c.lineJoin = 'round'; c.lineCap = 'round';
+  c.globalAlpha = 0.3 * fade + 0.05; c.fillStyle = 'rgba(10,5,20,.9)'; c.beginPath(); c.ellipse(0, 11 * s, 10 * s, 3.6 * s, 0, 0, Math.PI * 2); c.fill();
+  c.globalAlpha = fade; c.translate(0, hover - 4 * s);
+  for (const sd of [-1, 1]) {   // green hands poking out of the sheet
+    c.fillStyle = hurt ? '#FFF' : ZT.ghost.color; c.strokeStyle = INK; c.lineWidth = 1.6;
+    circ(c, sd * 10.5 * s + ax * 3 * s, 3 * s + ay * 2 * s + Math.sin(z.anim * 5 + sd) * s, 2.6 * s); c.fill(); c.stroke();
+  }
+  c.beginPath(); c.moveTo(-10 * s, 9 * s); c.lineTo(-10 * s, -5 * s); c.arc(0, -5 * s, 10 * s, Math.PI, 0); c.lineTo(10 * s, 9 * s);
+  for (let i = 0; i < 4; i++) { const x0 = 10 - i * 5, wv = Math.sin(z.anim * 6 + i) * 1.5; c.quadraticCurveTo((x0 - 2.5) * s, (13 + wv) * s, (x0 - 5) * s, 9 * s); }
+  c.closePath(); c.fillStyle = hurt ? '#FFF' : '#EEF0F4'; c.fill(); c.strokeStyle = INK; c.lineWidth = 2.2; c.stroke();
+  c.strokeStyle = 'rgba(150,160,180,.6)'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(-5 * s, 0); c.quadraticCurveTo(-6 * s, 5 * s, -4 * s, 9 * s); c.moveTo(4 * s, 1 * s); c.quadraticCurveTo(5.5 * s, 5 * s, 4 * s, 9 * s); c.stroke();
+  // eye holes with a zombie glow inside, and a little "ooo" mouth
+  c.fillStyle = '#1A1424';
+  for (const sd of [-1, 1]) { c.beginPath(); c.ellipse(sd * 3.6 * s + ax * 1.5 * s, -6 * s + ay, 2.2 * s, 3 * s, 0, 0, Math.PI * 2); c.fill(); }
+  c.fillStyle = '#B6FF6A'; for (const sd of [-1, 1]) { circ(c, sd * 3.6 * s + ax * 2 * s, -5.5 * s + ay * 1.4, 1 * s); c.fill(); }
+  c.fillStyle = '#1A1424'; c.beginPath(); c.ellipse(ax * s, -0.5 * s, 1.6 * s, 2.2 * s, 0, 0, Math.PI * 2); c.fill();
+  if (z.phased) {   // shimmering outline while faded
+    c.globalAlpha = 0.5 + Math.sin(t * 12) * 0.2; c.strokeStyle = '#CFE9FF'; c.lineWidth = 1.5; c.setLineDash([3, 4]); c.lineDashOffset = -t * 30;
+    c.beginPath(); c.arc(0, -5 * s, 12 * s, Math.PI, 0); c.lineTo(12 * s, 10 * s); c.lineTo(-12 * s, 10 * s); c.closePath(); c.stroke(); c.setLineDash([]);
+  }
+  c.restore();
+  const ey = z.y + hover - 4 * s - 5.5 * s;
+  z.eyes = fade > 0.6 ? [[z.x - 3.6 * s + ax * 2 * s, ey, 1.4 * s], [z.x + 3.6 * s + ax * 2 * s, ey, 1.4 * s]] : [];
+}
+// a zombie pushing a shopping cart: the cart is drawn in front of (or behind) the body
+function drawCartZ(c, z, t) {
+  const fa = z.fa ?? Math.atan2(z.vy || 1, z.vx || 0.0001), front = Math.sin(fa) > -0.25;
+  if (!front) drawCart(c, z, fa, t);
+  z._body = true; drawZombie(c, z, t); z._body = false;
+  if (front) drawCart(c, z, fa, t);
+  if (z.cwind > 0) { c.font = '18px "Lilita One", Impact, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 3.5; c.strokeStyle = '#000'; c.strokeText('!', z.x, z.y - 34); c.fillStyle = '#E5432D'; c.fillText('!', z.x, z.y - 34); }
+}
+function drawCart(c, z, fa, t) {
+  const shake = z.cwind > 0 ? Math.sin(t * 70) * 1.5 : 0, hurt = z.hurt > 0;
+  c.save(); c.translate(z.x + Math.cos(fa) * 19 + shake, z.y + Math.sin(fa) * 15 + 3); c.rotate(fa + Math.PI / 2);
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  c.fillStyle = 'rgba(10,5,20,.35)'; rr(c, -11, -11, 22, 26, 4); c.fill();
+  c.fillStyle = '#1A1720'; for (const [wx, wy] of [[-9, -12], [9, -12], [-8, 9], [8, 9]]) { circ(c, wx, wy, 2.6); c.fill(); }
+  // the wire basket, wider at the front
+  c.beginPath(); c.moveTo(-11, -13); c.lineTo(11, -13); c.lineTo(8.5, 8); c.lineTo(-8.5, 8); c.closePath();
+  c.fillStyle = 'rgba(190,200,215,.35)'; c.fill(); c.strokeStyle = INK; c.lineWidth = 4; c.stroke(); c.strokeStyle = hurt ? '#FFF' : '#C9D3DE'; c.lineWidth = 2; c.stroke();
+  c.strokeStyle = 'rgba(201,211,222,.8)'; c.lineWidth = 1;
+  for (let i = -6; i <= 6; i += 4) { c.beginPath(); c.moveTo(i * 1.1, -12); c.lineTo(i * 0.85, 7); c.stroke(); }
+  for (const y of [-7, -1, 4]) { c.beginPath(); c.moveTo(-10.5 + (y + 13) * 0.12, y); c.lineTo(10.5 - (y + 13) * 0.12, y); c.stroke(); }
+  // groceries piled in it
+  for (const [gx, gy, gw, gh, col] of [[-6, -9, 5, 6, '#E5432D'], [0, -10, 6, 7, '#F2C230'], [-2, -3, 7, 5, '#4C9A55'], [4, -2, 4, 6, '#3E6FA8']]) { c.fillStyle = col; c.strokeStyle = INK; c.lineWidth = 1.2; rr(c, gx, gy, gw, gh, 1); c.fill(); c.stroke(); }
+  // the front bumper the shots bounce off, and the red handle at the back
+  c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.moveTo(-11, -14); c.lineTo(11, -14); c.stroke();
+  c.strokeStyle = '#E8EEF4'; c.lineWidth = 3; c.stroke();
+  c.fillStyle = '#C8372D'; c.strokeStyle = INK; c.lineWidth = 1.5; rr(c, -9, 9, 18, 3.5, 1.5); c.fill(); c.stroke();
+  c.restore();
+}
+
 function drawCrawler(c, z, t) {
   const L = zLook(z), s = z.r / 12, hurt = z.hurt > 0;
   c.save(); c.translate(z.x, z.y);
@@ -3588,7 +3765,7 @@ function consume() {
     else if (ev.e === 'turned') { popups.push({ x: ev.s.x, y: ev.s.y - 30, text: 'NOOO! THEY TURNED!', t: 0, life: 1.4, color: '#E5432D', size: 13 }); kick(0.2); goo(ev.s.x, ev.s.y + 6, 10, Math.random()); }
     else if (ev.e === 'weapon') { const Wp = WEAPONS[ev.key]; bigText = { text: Wp.name + '!', t: 0, color: '#7BD84A', sub: Wp.desc }; showHint(`New weapon: ${Wp.name}. ${matchMedia('(pointer: coarse)').matches ? 'Tap SWAP' : 'Press Q'} to switch weapons.`, 3500); lastWpn = ''; }
     else if (ev.e === 'swing') {
-      if (!W.swingHint) { W.swingHint = true; showHint('Out of ammo! Swing your backpack. Zombies you knock out drop more ammo.', 3500); }
+      if (!W.swingHint) { W.swingHint = true; showHint('Out of ammo! Swing your backpack. Smash a vending machine or knock out zombies for more ammo.', 3800); }
       if (!ev.hit) for (let i = 0; i < 3; i++) particles.push({ kind: 'streak', x: W.me.x + Math.cos(ev.a) * 30, y: W.me.y - 4 + Math.sin(ev.a) * 30, vx: Math.cos(ev.a + rand(-0.6, 0.6)) * 160, vy: Math.sin(ev.a + rand(-0.6, 0.6)) * 160, life: 0.12, max: 0.12, c: 'rgba(255,255,255,.7)', r: 1.5, post: true, fr: 0.85 });
     }
     else if (ev.e === 'vendWhack') {
@@ -3603,6 +3780,22 @@ function consume() {
     }
     else if (ev.e === 'mopSwish') { for (let i = 0; i < 6; i++) { const a = rand(0, Math.PI * 2); particles.push({ x: ev.z.x + Math.cos(a) * 30, y: ev.z.y + Math.sin(a) * 30, vx: Math.cos(a) * 90, vy: Math.sin(a) * 90, life: 0.4, max: 0.4, c: '#BFE6FF', r: 2 }); } }
     else if (ev.e === 'wetFloor') { popups.push({ x: W.me.x, y: W.me.y - 30, text: 'SLIPPERY!', t: 0, life: 0.8, color: '#BFE6FF', size: 13 }); }
+    else if (ev.e === 'flip') {
+      if (Math.random() < 0.6) popups.push({ x: ev.z.x, y: ev.z.y - 34, text: ['HUP!', 'WHEE!', 'MISSED ME!', 'TA-DA!'][Math.floor(Math.random() * 4)], t: 0, life: 0.8, color: '#F2C230', size: 13 });
+      for (let i = 0; i < 6; i++) particles.push({ kind: 'star', x: ev.z.x, y: ev.z.y - 8, vx: rand(-90, 90), vy: rand(-120, 0), life: 0.4, max: 0.4, c: i % 2 ? '#E5432D' : '#F2C230', r: 3, post: true, fr: 0.9 });
+    }
+    else if (ev.e === 'dizzy') { popups.push({ x: ev.z.x, y: ev.z.y - 36, text: 'DIZZY!', t: 0, life: 0.9, color: '#FFE27A', size: 14 }); }
+    else if (ev.e === 'pumpkinPop') {
+      kick(0.25); popups.push({ x: ev.z.x, y: ev.z.y - 30, text: 'POP!', t: 0, life: 0.9, color: '#F29A2A', size: 18 });
+      rings.push({ x: ev.z.x, y: ev.z.y - 4, r0: 8, r1: 46, w: 5, t: 0, dur: 0.3, col: '#F29A2A' });
+      for (let i = 0; i < 18; i++) particles.push({ x: ev.z.x, y: ev.z.y - 4, vx: rand(-200, 200), vy: rand(-200, 120), life: 0.7, max: 0.7, c: i % 3 ? '#E8842A' : '#5A7A2E', r: rand(2.5, 4.5) });
+    }
+    else if (ev.e === 'clang') {
+      if (Math.random() < 0.35) popups.push({ x: ev.x, y: ev.y - 16, text: 'BLOCKED!', t: 0, life: 0.6, color: '#C9D3DE', size: 12 });
+      for (let i = 0; i < 5; i++) particles.push({ kind: 'star', x: ev.x, y: ev.y, vx: rand(-120, 120), vy: rand(-140, 20), life: 0.25, max: 0.25, c: '#FFFFFF', r: 2.5, post: true, fr: 0.85 });
+    }
+    else if (ev.e === 'cartRev') { popups.push({ x: ev.z.x, y: ev.z.y - 40, text: 'RATTLE RATTLE!', t: 0, life: 0.8, color: '#FF8A7A', size: 12 }); }
+    else if (ev.e === 'cartCrash') { kick(0.2); popups.push({ x: ev.z.x, y: ev.z.y - 30, text: 'CRASH!', t: 0, life: 0.8, color: '#C9D3DE', size: 15 }); for (let i = 0; i < 8; i++) particles.push({ kind: 'star', x: ev.z.x, y: ev.z.y, vx: rand(-150, 150), vy: rand(-150, 50), life: 0.4, max: 0.4, c: '#FFE27A', r: 3.5, post: true, fr: 0.88 }); }
     else if (ev.e === 'whack') {
       kick(0.14); hitstop = Math.max(hitstop, 0.04);
       popups.push({ x: ev.z.x, y: ev.z.y - 30, text: ['WHAP!', 'BONK!', 'THWACK!', 'WHUMP!'][Math.floor(Math.random() * 4)], t: 0, life: 0.7, color: '#FFFFFF', size: 14 });
@@ -3638,7 +3831,8 @@ function consume() {
     else if (ev.e === 'flag') { /* the flag itself is drawn in flight */ }
     else if (ev.e === 'bite') { flash = 0.4; kick(0.35); hitstop = Math.max(hitstop, 0.06); popups.push({ x: W.me.x, y: W.me.y - 32, text: ev.kind === 'mop' ? 'SPLAT!' : 'CHOMP!', t: 0, life: 0.8, color: '#FF8A7A', size: 14 }); if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) {} } }
     else if (ev.e === 'pickup') { popups.push({ x: ev.p.x, y: ev.p.y - 20, text: ev.text, t: 0, life: 1, color: '#F2C230', size: 13 }); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; particles.push({ kind: 'star', x: ev.p.x, y: ev.p.y - 4, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, life: 0.4, max: 0.4, c: '#FFE27A', r: 4, post: true, fr: 0.86 }); } rings.push({ x: ev.p.x, y: ev.p.y - 4, r0: 4, r1: 26, w: 3, t: 0, dur: 0.25, col: '#FFE27A' }); }
-    else if (ev.e === 'spot') { if (Math.random() < 0.5) popups.push({ x: ev.z.x, y: ev.z.y - 34, text: 'HRRAAAH!', t: 0, life: 1, color: '#FF8A7A', size: 12 }); }
+    else if (ev.e === 'spot' && ZOMBIE_TIPS[ev.z.type] && !(W.tipped || (W.tipped = {}))[ev.z.type]) { W.tipped[ev.z.type] = true; showHint(ZOMBIE_TIPS[ev.z.type], 4500); }
+    if (ev.e === 'spot') { if (Math.random() < 0.5) popups.push({ x: ev.z.x, y: ev.z.y - 34, text: 'HRRAAAH!', t: 0, life: 1, color: '#FF8A7A', size: 12 }); }
     else if (ev.e === 'groan') { popups.push({ x: ev.z.x, y: ev.z.y - 30, text: GROANS[Math.floor(Math.random() * GROANS.length)], t: 0, life: 1.4, color: '#B6E89A', size: 10 }); }
   }
   W.events.length = 0;
@@ -3887,7 +4081,7 @@ function storeLinks() {
 }
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); window.__installEvt = e; if (state === 'menu') showMenu(); });
 window.addEventListener('appinstalled', () => { window.__installEvt = null; if (state === 'menu') showMenu(); });
-window.__zs = { spawnBosses, swing, killZombie, zLook, SOLID, zoneAt, makeWorld, step, LEVELS, loadMap, get grid() { return grid; }, get MW() { return MW; }, get MH() { return MH; }, renderMap: () => renderMap(), get mapCanvas() { return mapCanvas; }, grantPower, get W() { return W; }, get ZONE_TILES() { return ZONE_TILES; }, get GATES() { return GATES; }, get EXIT_OPEN() { return EXIT_OPEN; }, get MAP() { return MAP; } };
+window.__zs = { makeZ, fire, spawnBosses, swing, killZombie, zLook, SOLID, zoneAt, makeWorld, step, LEVELS, loadMap, get grid() { return grid; }, get MW() { return MW; }, get MH() { return MH; }, renderMap: () => renderMap(), get mapCanvas() { return mapCanvas; }, grantPower, get W() { return W; }, get ZONE_TILES() { return ZONE_TILES; }, get GATES() { return GATES; }, get EXIT_OPEN() { return EXIT_OPEN; }, get MAP() { return MAP; } };
 new ResizeObserver(resize).observe(app);
 resize();
 loadMap('school'); renderMap(); initAmbient();
