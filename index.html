@@ -632,7 +632,7 @@ const ZT = {
   nerd:    { r: 11, hp: 2, speed: 44, dmg: 1, color: '#8DB87C' },
   crawler: { r: 10, hp: 2, speed: 96, dmg: 1, color: '#90A86A' },
   cheer:   { r: 11, hp: 3, speed: 60, dmg: 1, color: '#9CC27A' },
-  janitor: { r: 22, hp: 45, speed: 58, dmg: 2, color: '#7FA86A', boss: 'THE JANITOR', sub: 'Nobody messes up his floors.' },
+  janitor: { r: 22, hp: 45, speed: 58, dmg: 2, color: '#7FA86A', boss: 'THE JANITOR', sub: 'Strike when his mop is down!' },
   coach:   { r: 20, hp: 50, speed: 56, dmg: 2, color: '#86AE6E', boss: 'THE COACH', sub: 'Drop and give him twenty!' },
   driver:  { r: 27, hp: 60, speed: 40, dmg: 2, color: '#86A86A', boss: 'THE BUS DRIVER', sub: 'Last stop. Everybody off!' },
   ref:     { r: 15, hp: 22, speed: 74, dmg: 1, color: '#8FB87A', boss: 'THE REFEREES', sub: 'Two of them. Flags are flying!' },
@@ -839,11 +839,11 @@ function killZombie(w, z) {
     drop('power', { power: pk, ttl: 15 });
   }
 }
-function hurtMe(w, dmg, fx, fy, src) {
+function hurtMe(w, dmg, fx, fy, src, kind) {
   const me = w.me;
   if (me.hp <= 0 || me.inv > 0) return false;
   if (me.shield > 0) { me.shield--; if (!me.shield) delete me.powers.shield; w.events.push({ e: 'blocked', z: src }); }
-  else { me.hp -= dmg; w.events.push({ e: 'bite', z: src }); }
+  else { me.hp -= dmg; w.events.push({ e: 'bite', z: src, kind }); }
   me.inv = 1.4;
   const d = Math.hypot(me.x - fx, me.y - fy) || 1;
   slide(me, (me.x - fx) / d * 26, (me.y - fy) / d * 26, P_R);
@@ -869,7 +869,7 @@ function explode(w, x, y) {
   if (Math.hypot(w.me.x - x, w.me.y - y) < 62) hurtMe(w, 1, x, y, null);
 }
 // shooting a vending machine or a barrel
-function damageProp(w, tx, ty) {
+function damageProp(w, tx, ty, bySwing) {
   const key = tx + ',' + ty, v = w.vend[key];
   if (!v) return;
   v.hp--;
@@ -883,7 +883,11 @@ function damageProp(w, tx, ty) {
   else {
     w.events.push({ e: 'vendBreak', x: cx, y: cy });
     for (let i = 0; i < 2; i++) w.pickups.push({ type: 'health', heal: 1, x: cx + rand(-14, 14), y: cy + rand(-6, 14), taken: false, ttl: 30 });
-    w.pickups.push(Math.random() < 0.35 ? { type: 'power', power: 'rapid', x: cx, y: cy + 10, taken: false, ttl: 20 } : { type: 'ammo', amount: 15, x: cx, y: cy + 10, taken: false, ttl: 30 });
+    // out of ammo and smashing it open with your backpack? It always has ammo inside.
+    if (bySwing || w.me.ammo < 5) {
+      w.pickups.push({ type: 'ammo', amount: 20, x: cx - 8, y: cy + 12, taken: false, ttl: 30 });
+      if (Math.random() < 0.35) w.pickups.push({ type: 'power', power: 'rapid', x: cx + 10, y: cy + 12, taken: false, ttl: 20 });
+    } else w.pickups.push(Math.random() < 0.35 ? { type: 'power', power: 'rapid', x: cx, y: cy + 10, taken: false, ttl: 20 } : { type: 'ammo', amount: 15, x: cx, y: cy + 10, taken: false, ttl: 30 });
   }
 }
 
@@ -906,6 +910,22 @@ function swing(w, a) {
     w.events.push({ e: 'whack', z, x: z.x - dx / d * z.r, y: z.y - 8 - dy / d * z.r });
     if (z.hp <= 0) killZombie(w, z);
     hit++;
+  }
+  // bash the nearest vending machine in front of you
+  let best = null, bd = 1e9;
+  const tx0 = Math.floor((me.x - SWING_R - TS) / TS), tx1 = Math.floor((me.x + SWING_R + TS) / TS), ty0 = Math.floor((me.y - SWING_R - TS) / TS), ty1 = Math.floor((me.y + SWING_R + TS) / TS);
+  for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+    const v = w.vend[tx + ',' + ty]; if (!v || v.kind !== 'vending') continue;
+    const cx = (tx + 0.5) * TS, cy = (ty + 0.5) * TS, dd = Math.hypot(cx - me.x, cy - me.y);
+    if (dd > SWING_R + TS * 0.6) continue;
+    let da = Math.atan2(cy - me.y, cx - me.x) - a; da = Math.atan2(Math.sin(da), Math.cos(da));
+    if (Math.abs(da) > SWING_ARC + 0.35 && dd > TS * 0.9) continue;
+    if (dd < bd) { bd = dd; best = [tx, ty, cx, cy]; }
+  }
+  if (best) {
+    const [tx, ty, cx, cy] = best, left = w.vend[tx + ',' + ty].hp - 1;
+    w.events.push({ e: 'vendWhack', x: (me.x + cx) / 2, y: (me.y + cy) / 2 - 6, left });
+    damageProp(w, tx, ty, true); hit++;
   }
   w.events.push({ e: 'swing', a, hit });
 }
@@ -1004,6 +1024,83 @@ function spawnBosses(w) {
   });
   w.bossNames = ZT[kinds[0]].boss;
 }
+/* ---------- the Janitor: a telescoping mop with serious reach ---------- */
+// He keeps you at mop's length: a wide sweep up close and a long poke from further out,
+// and every swipe leaves a wet floor that slows you down. Right after a swipe the mop is
+// on the floor and he's catching his breath: that's the moment to rush in with the foam.
+const MOP_REACH = 172, MOP_JAB = 250, MOP_ARC = 1.3, MOP_IDLE = 58;
+function janitorThink(w, z, dt, d, dx, dy, pace) {
+  const me = w.me, aim = Math.atan2(dy, dx);
+  const m = z.mop || (z.mop = { ph: 'idle', t: 0, cd: 1.2, a: aim, cur: aim, len: MOP_IDLE, dir: 1, combo: 0, prev: 0, hit: false });
+  const angry = z.hp < z.maxHp * 0.5, quick = Math.sqrt(pace || 1);
+  const face = (a) => { z.vx = Math.cos(a); z.vy = Math.sin(a); };
+  const ease = (target, k) => { m.len += (target - m.len) * Math.min(1, dt * k); };
+  m.cd -= dt;
+  if (m.ph === 'idle') {
+    ease(MOP_IDLE, 8);
+    let da = aim - m.cur; da = Math.atan2(Math.sin(da), Math.cos(da)); m.cur += da * Math.min(1, dt * 6);   // mop pointed at you
+    if (me.hp > 0 && m.cd <= 0 && d < MOP_REACH + 34) {
+      m.ph = 'wind'; m.t = (angry ? 0.42 : 0.55) / quick; m.a = aim; m.dir = Math.random() < 0.5 ? 1 : -1; m.combo = angry ? 1 : 0;
+      if (Math.random() < 0.4) w.events.push({ e: 'bossYell', z, text: ['MY FLOORS!', 'WIPE OUT!', 'MIND THE MOP!', 'CLEANUP TIME!'][Math.floor(Math.random() * 4)] });
+      return true;
+    }
+    if (me.hp > 0 && m.cd <= 0 && d >= MOP_REACH + 34 && d < MOP_JAB + 30 && los(z.x, z.y - 8, me.x, me.y - 6)) {
+      m.ph = 'jwind'; m.t = 0.5 / quick; m.a = aim; return true;
+    }
+    return false;   // otherwise he shuffles after you like any boss
+  }
+  m.t -= dt;
+  if (m.ph === 'wind') {
+    // winds the mop back and telescopes it out: the shaded arc on the floor shows where it will land
+    face(m.a); m.cur = m.a - m.dir * MOP_ARC * 1.15; ease(MOP_REACH, 9);
+    if (m.t <= 0) { m.ph = 'sweep'; m.t = 0.3; m.prev = -m.dir * MOP_ARC; m.hit = false; w.events.push({ e: 'mopSwish', z }); }
+    return true;
+  }
+  if (m.ph === 'sweep') {
+    const q = 1 - Math.max(0, m.t) / 0.3, k = -m.dir * MOP_ARC + 2 * m.dir * MOP_ARC * (1 - (1 - q) * (1 - q));
+    m.cur = m.a + k; m.len = MOP_REACH; face(m.cur);
+    let pr = aim - m.a; pr = Math.atan2(Math.sin(pr), Math.cos(pr));
+    const lo = Math.min(m.prev, k) - 0.14, hi = Math.max(m.prev, k) + 0.14;
+    if (!m.hit && d < MOP_REACH + P_R && pr >= lo && pr <= hi) { m.hit = true; mopWhap(w, z, aim); }
+    m.prev = k;
+    if (m.t <= 0) {
+      addPuddle(w, z.x + Math.cos(m.cur) * MOP_REACH * 0.82, z.y + Math.sin(m.cur) * MOP_REACH * 0.82);
+      if (m.combo > 0) { m.combo--; m.ph = 'wind'; m.t = 0.18; m.dir = -m.dir; m.a = aim; }   // angry: straight back the other way
+      else { m.ph = 'rest'; m.t = angry ? 0.8 : 1.05; }
+    }
+    return true;
+  }
+  if (m.ph === 'jwind') {
+    face(m.a); m.cur = m.a; ease(26, 10);   // pulls the mop back for a big poke
+    if (m.t <= 0) { m.ph = 'jab'; m.t = 0.24; m.hit = false; w.events.push({ e: 'mopSwish', z }); }
+    return true;
+  }
+  if (m.ph === 'jab') {
+    const q = 1 - Math.max(0, m.t) / 0.24; m.len = 26 + (MOP_JAB - 26) * Math.min(1, q * 1.7); m.cur = m.a;
+    const ux = Math.cos(m.a), uy = Math.sin(m.a), along = dx * ux + dy * uy, side = Math.abs(-dx * uy + dy * ux);
+    if (!m.hit && along > 0 && along < m.len + P_R && side < 15 + P_R) { m.hit = true; mopWhap(w, z, m.a); }
+    if (m.t <= 0) { addPuddle(w, z.x + ux * MOP_JAB * 0.92, z.y + uy * MOP_JAB * 0.92); m.ph = 'rest'; m.t = 0.85; }
+    return true;
+  }
+  if (m.ph === 'rest') {
+    ease(MOP_REACH * 0.5, 5);   // mop on the floor, catching his breath
+    if (m.t <= 0) { m.ph = 'idle'; m.cd = (angry ? 0.35 : 0.65) / quick; }
+    return true;
+  }
+  m.ph = 'idle'; return false;
+}
+function mopWhap(w, z, a) {
+  const me = w.me;
+  if (hurtMe(w, 1, z.x, z.y, z, 'mop')) slide(me, Math.cos(a) * 58, Math.sin(a) * 58, P_R);
+  else slide(me, Math.cos(a) * 28, Math.sin(a) * 28, P_R);
+  w.events.push({ e: 'mopHit', x: me.x, y: me.y });
+}
+function addPuddle(w, x, y) {
+  if (collides(x, y, 4)) return;
+  const P = w.puddles || (w.puddles = []);
+  P.push({ x, y, r: rand(30, 38), t: 9, max: 9, seed: Math.random() * 10 });
+  if (P.length > 6) P.shift();
+}
 function bossThink(w, z, dt) {
   const me = w.me, dx = me.x - z.x, dy = me.y - z.y, d = Math.hypot(dx, dy), pace = z.tough;
   z.aggro = 99;
@@ -1026,8 +1123,7 @@ function bossThink(w, z, dt) {
     z.throwT = w.t;
   };
   if (z.type === 'janitor') {
-    if (z.t1 <= 0) { z.t1 = rand(4, 5.5) / pace; if (d < 320) { startCharge('MY FLOORS!'); return true; } }
-    if (z.t2 <= 0) { z.t2 = 12 / pace; if (!w.zombies.some(o => o.type === 'mini' && !o.dead)) { summonMinis(w, z, 2, 2); w.events.push({ e: 'bossYell', z, text: 'DETENTION!' }); } }
+    return janitorThink(w, z, dt, d, dx, dy, pace);
   } else if (z.type === 'coach') {
     if (z.t1 <= 0) { z.t1 = rand(2.4, 3.0) / pace; toss('ball', 270, { bounce: 2, r: 8 }); }
     // the coach only sends in a couple of players at a time, and waits until they're gone
@@ -1150,7 +1246,11 @@ function step(w, dt, move, aim) {
   const ml = Math.hypot(move[0], move[1]);
   me.moving = ml > 0.1 && me.hp > 0;
   if (MAP.car) { driveCar(w, move, ml, dt); aim = null; }
-  else if (me.moving) { const s = P_SPEED * (me.powers.speed ? 1.45 : 1) * Math.min(1, ml) * dt; slide(me, move[0] / ml * s, move[1] / ml * s, P_R); me.walk += dt * 11; if (aim === null) me.face = Math.atan2(move[1], move[0]); }
+  let wet = false;
+  if (w.puddles && w.puddles.length) { for (const p of w.puddles) p.t -= dt; w.puddles = w.puddles.filter(p => p.t > 0); wet = w.puddles.some(p => Math.hypot(p.x - me.x, p.y - me.y) < p.r); }
+  if (wet && !me.wet && me.moving) w.events.push({ e: 'wetFloor' });
+  me.wet = wet;
+  if (!MAP.car && me.moving) { const s = P_SPEED * (me.powers.speed ? 1.45 : 1) * (wet ? 0.55 : 1) * Math.min(1, ml) * dt; slide(me, move[0] / ml * s, move[1] / ml * s, P_R); me.walk += dt * 11; if (aim === null) me.face = Math.atan2(move[1], move[0]); }
   if (aim !== null && me.hp > 0) { me.face = aim; me.firing = true; if (me.ammo < WEAPONS[me.weapon].cost && !me.powers.ammo) { if (me.cd <= 0) swing(w, aim); } else fire(w, aim); } else me.firing = false;
   // which room are you in?
   const zNow = zoneAt(me.x, me.y);
@@ -2440,6 +2540,77 @@ function drawCrawler(c, z, t) {
 }
 
 
+// the Janitor's mop, drawn around him: arms to the grip, a long wooden handle, a metal clamp and a floppy string head
+function drawMop(c, z, m, s, t) {
+  const a = m.cur, ca = Math.cos(a), sa = Math.sin(a), len = m.len, flash = z.hurt > 0;
+  const gx = ca * 11 * s, gy = sa * 9 * s - 1 * s, hx = ca * len, hy = sa * len - 2 * s;
+  c.save(); c.lineCap = 'round'; c.lineJoin = 'round';
+  // arms
+  for (const sd of [-1, 1]) {
+    const sx = sd * 11 * s, sy = -2 * s, ex = gx + (sd * -sa) * 2.5 * s - ca * (sd > 0 ? 0 : 5) * s, ey = gy + (sd * ca) * 2.5 * s - sa * (sd > 0 ? 0 : 5) * s;
+    c.strokeStyle = INK; c.lineWidth = 7.5 * s * 0.6; c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.stroke();
+    c.strokeStyle = flash ? '#FFF' : '#5E7F9A'; c.lineWidth = 5 * s * 0.6; c.stroke();
+    c.fillStyle = flash ? '#FFF' : ZT.janitor.color; c.strokeStyle = INK; c.lineWidth = 1.6; circ(c, ex, ey, 2.6 * s); c.fill(); c.stroke();
+  }
+  // handle
+  const bx = gx - ca * 4 * s, by = gy - sa * 4 * s;
+  c.strokeStyle = INK; c.lineWidth = 6; c.beginPath(); c.moveTo(bx, by); c.lineTo(hx, hy); c.stroke();
+  c.strokeStyle = '#C08A4E'; c.lineWidth = 3.4; c.stroke();
+  c.strokeStyle = 'rgba(255,230,180,.55)'; c.lineWidth = 1; c.beginPath(); c.moveTo(bx - sa, by + ca); c.lineTo(hx - sa, hy + ca); c.stroke();
+  if (len > MOP_IDLE + 20) {   // telescoping joints show when it's extended
+    c.fillStyle = '#B8C2CC'; c.strokeStyle = INK; c.lineWidth = 1.2;
+    for (const f of [0.42, 0.68]) { const jx = gx + (hx - gx) * f, jy = gy + (hy - gy) * f; c.save(); c.translate(jx, jy); c.rotate(a); rr(c, -3, -3, 6, 6, 1.5); c.fill(); c.stroke(); c.restore(); }
+  }
+  // motion trail while sweeping
+  if (m.ph === 'sweep') {
+    c.strokeStyle = 'rgba(191,230,255,.45)'; c.lineWidth = 10; c.beginPath();
+    c.arc(0, -2 * s, len * 0.92, a - m.dir * 0.55, a, m.dir < 0); c.stroke();
+  }
+  // mop head
+  c.save(); c.translate(hx, hy); c.rotate(a);
+  const flop = Math.sin(t * 9 + z.anim) * 1.5 + (m.ph === 'sweep' ? -m.dir * 3 : 0);
+  c.fillStyle = '#9AA6B2'; c.strokeStyle = INK; c.lineWidth = 1.6; rr(c, -4, -7, 6, 14, 2); c.fill(); c.stroke();   // clamp
+  c.lineWidth = 2;
+  c.fillStyle = flash ? '#FFF' : '#EAE4D2'; c.beginPath();
+  c.moveTo(1, -8); c.quadraticCurveTo(10, -13 + flop, 19, -9 + flop); c.quadraticCurveTo(24, 0 + flop, 19, 9 + flop); c.quadraticCurveTo(10, 13 + flop, 1, 8); c.closePath(); c.fill(); c.stroke();
+  c.strokeStyle = '#B9B19C'; c.lineWidth = 1.4;
+  for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(3, i * 2.1); c.quadraticCurveTo(11, i * 2.6 + flop * 0.5 + Math.sin(i + t * 6) * 1.2, 18, i * 2.6 + flop); c.stroke(); }
+  c.restore();
+  // drips
+  c.fillStyle = 'rgba(150,210,255,.85)';
+  for (let i = 0; i < 3; i++) { const q = (t * 1.6 + i * 0.33 + z.anim * 0.2) % 1; circ(c, hx + Math.sin(i * 2.1) * 6, hy + 6 + q * 10, 1.6 * (1 - q * 0.5)); c.fill(); }
+  c.restore();
+}
+// on the floor: the wet patches the mop leaves behind, and the danger zone while he winds up
+function drawJanitorFloor(c, t) {
+  if (W.puddles) for (const p of W.puddles) {
+    const fade = Math.min(1, p.t / 1.5, (p.max - p.t) / 0.25 + 0.2);
+    c.save(); c.globalAlpha = fade; c.translate(p.x, p.y);
+    // a smooth, lumpy puddle: a few overlapping ovals
+    c.beginPath();
+    for (let i = 0; i < 4; i++) { const a = p.seed * 2.3 + i * 1.7, rx = p.r * (i ? 0.55 : 0.8), ry = rx * 0.62; c.moveTo(Math.cos(a) * p.r * (i ? 0.38 : 0) + rx, Math.sin(a) * p.r * (i ? 0.3 : 0)); c.ellipse(Math.cos(a) * p.r * (i ? 0.38 : 0), Math.sin(a) * p.r * (i ? 0.3 : 0), rx, ry, 0, 0, Math.PI * 2); }
+    c.fillStyle = 'rgba(120,190,240,.42)'; c.fill('nonzero');
+    c.fillStyle = 'rgba(235,248,255,.6)'; c.beginPath(); c.ellipse(-p.r * 0.3, -p.r * 0.3, p.r * 0.28, p.r * 0.12, -0.4, 0, Math.PI * 2); c.fill();
+    // a little WET FLOOR sign
+    c.translate(p.r * 0.55, -p.r * 0.35); c.fillStyle = '#F2C230'; c.strokeStyle = INK; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(0, -9); c.lineTo(6, 6); c.lineTo(-6, 6); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = INK; c.fillRect(-0.8, -3, 1.6, 4.5); c.fillRect(-0.8, 2.6, 1.6, 1.6);
+    c.restore();
+  }
+  for (const z of W.zombies) {
+    if (z.type !== 'janitor' || z.dead || !z.mop) continue;
+    const m = z.mop, pulse = 0.5 + Math.sin(t * 20) * 0.5;
+    if (m.ph === 'wind') {
+      c.save(); c.fillStyle = `rgba(255,90,70,${0.1 + pulse * 0.08})`; c.strokeStyle = `rgba(255,120,90,${0.45 + pulse * 0.3})`; c.lineWidth = 2.5; c.setLineDash([8, 6]);
+      c.beginPath(); c.moveTo(z.x, z.y); c.arc(z.x, z.y, MOP_REACH, m.a - MOP_ARC - 0.1, m.a + MOP_ARC + 0.1); c.closePath(); c.fill(); c.stroke(); c.restore();
+    } else if (m.ph === 'jwind') {
+      c.save(); c.translate(z.x, z.y); c.rotate(m.a);
+      c.fillStyle = `rgba(255,90,70,${0.12 + pulse * 0.08})`; c.strokeStyle = `rgba(255,120,90,${0.5 + pulse * 0.3})`; c.lineWidth = 2.5; c.setLineDash([8, 6]);
+      rr(c, 0, -16, MOP_JAB + 10, 32, 14); c.fill(); c.stroke(); c.restore();
+    }
+  }
+}
+
 function drawBoss(c, z, t) {
   const T = ZT[z.type], s = z.r / 12, flash = z.hurt > 0;
   const shakeX = z.windup > 0 ? Math.sin(t * 60) * 2 : 0, rise = z.enter > 0 ? z.enter * 10 : 0;
@@ -2449,17 +2620,34 @@ function drawBoss(c, z, t) {
   const ang = Math.atan2(z.vy || 1, z.vx || 0.0001), ax = Math.cos(ang), ay = Math.sin(ang), wob = Math.sin(z.anim * 5) * 0.08;
   const skin = flash ? '#FFFFFF' : T.color;
   if (z.type === 'janitor') {
-    // mop held out in front
-    c.strokeStyle = '#8A5A2E'; c.lineWidth = 4; c.beginPath(); c.moveTo(6 * s, -2 * s); c.lineTo(6 * s + ax * 26 * s, -2 * s + ay * 26 * s); c.stroke();
-    c.fillStyle = '#D9D4C7'; c.strokeStyle = INK; c.lineWidth = 2; circ(c, 6 * s + ax * 28 * s, -2 * s + ay * 28 * s, 5 * s); c.fill(); c.stroke();
-    c.rotate(wob);
-    rr(c, -12 * s, -3 * s, 24 * s, 15 * s, 6 * s); c.fillStyle = '#4A6E8C'; c.fill(); c.stroke();          // coveralls
-    c.fillStyle = '#3A5A74'; c.fillRect(-6 * s, -2 * s, 3 * s, 13 * s); c.fillRect(3 * s, -2 * s, 3 * s, 13 * s);
-    c.fillStyle = '#C9D3DE'; for (let i = 0; i < 3; i++) circ(c, -8 * s + i * 2.4 * s, 9 * s, 1.2 * s), c.fill();   // keys
-    circ(c, 0, -10 * s, 10 * s); c.fillStyle = skin; c.fill(); c.stroke();
-    c.fillStyle = '#3A5A74'; c.beginPath(); c.arc(0, -12 * s, 10.2 * s, Math.PI, Math.PI * 2); c.closePath(); c.fill(); c.stroke();
-    rr(c, -2 * s, -14 * s, 13 * s, 3.5 * s, 1.5 * s); c.fill(); c.stroke();
-    c.fillStyle = '#4A3A2A'; c.beginPath(); c.ellipse(0, -5 * s, 5 * s, 1.8 * s, 0, 0, Math.PI * 2); c.fill();    // mustache
+    // a big, grumpy zombie janitor: work cap, walrus mustache, coveralls, a ring of keys and his trusty telescoping mop
+    const m = z.mop || { cur: ang, len: MOP_IDLE, ph: 'idle' }, up = Math.sin(m.cur) < -0.25;
+    if (up) drawMop(c, z, m, s, t);
+    c.save(); c.rotate(wob);
+    c.fillStyle = flash ? '#FFF' : '#2B2530';                                                                   // boots
+    rr(c, -10 * s, 9 * s, 8 * s, 5 * s, 2.2 * s); c.fill(); c.stroke(); rr(c, 2 * s, 9 * s, 8 * s, 5 * s, 2.2 * s); c.fill(); c.stroke();
+    c.fillStyle = flash ? '#FFF' : '#5E7F9A'; c.beginPath(); c.ellipse(0, 3 * s, 13.5 * s, 10.5 * s, 0, 0, Math.PI * 2); c.fill(); c.stroke();   // coveralls, with a belly
+    c.fillStyle = flash ? '#FFF' : '#4B6982'; rr(c, -7 * s, -6 * s, 14 * s, 9.5 * s, 2.5 * s); c.fill(); c.stroke();                       // bib
+    c.fillStyle = '#E8C25A'; circ(c, -5 * s, -4 * s, 1.2 * s); c.fill(); circ(c, 5 * s, -4 * s, 1.2 * s); c.fill();                          // strap buttons
+    c.fillStyle = '#F4F1E6'; c.lineWidth = 1.2; c.beginPath(); c.ellipse(-2 * s, -0.8 * s, 3.6 * s, 2 * s, 0, 0, Math.PI * 2); c.fill(); c.stroke();   // name patch
+    c.strokeStyle = '#C8372D'; c.lineWidth = 0.9 * s; c.beginPath(); c.moveTo(-4.4 * s, -0.6 * s); c.quadraticCurveTo(-3 * s, -2 * s, -2 * s, -0.8 * s); c.quadraticCurveTo(-1 * s, 0.2 * s, 0.4 * s, -1.2 * s); c.stroke();
+    c.strokeStyle = INK; c.lineWidth = 2.5;
+    c.fillStyle = '#2A1F18'; c.fillRect(-13 * s, 5.2 * s, 26 * s, 2.4 * s);                                                                  // belt
+    c.strokeStyle = '#E8C25A'; c.lineWidth = 0.9 * s; circ(c, 7 * s, 8.6 * s, 1.6 * s); c.stroke();                                          // key ring on the belt
+    c.fillStyle = '#C9D3DE'; for (const [kx, kr] of [[-0.9, 0.35], [0.9, -0.35]]) { c.save(); c.translate((7 + kx) * s, 9.8 * s); c.rotate(kr); c.fillRect(-0.5 * s, 0, 1 * s, 2.6 * s); c.restore(); }
+    c.strokeStyle = INK; c.lineWidth = 2.5;
+    circ(c, 0, -10 * s, 10 * s); c.fillStyle = skin; c.fill(); c.stroke();                                                                 // head
+    c.fillStyle = 'rgba(40,70,30,.35)'; circ(c, 5 * s, -6 * s, 1.5 * s); c.fill(); circ(c, -6.5 * s, -8 * s, 1.1 * s); c.fill();           // zombie blotches
+    c.fillStyle = flash ? '#FFF' : '#2F4A63'; c.beginPath(); c.arc(0, -12.5 * s, 10.4 * s, Math.PI * 1.03, Math.PI * 1.97); c.closePath(); c.fill(); c.stroke();   // work cap
+    c.beginPath(); c.ellipse(0, -12.4 * s, 11.6 * s, 2.5 * s, 0, 0, Math.PI); c.fill(); c.stroke();                                         // cap brim
+    c.fillStyle = '#E8C25A'; rr(c, -2.4 * s, -18.5 * s, 4.8 * s, 3 * s, 1 * s); c.fill();                                                   // cap badge
+    c.fillStyle = '#A7A096'; c.beginPath();                                                                                                    // walrus mustache
+    c.moveTo(0, -6.6 * s); c.quadraticCurveTo(-4 * s, -8.2 * s, -7 * s, -5 * s); c.quadraticCurveTo(-5.5 * s, -4.4 * s, -3 * s, -5.2 * s);
+    c.quadraticCurveTo(0, -4.4 * s, 3 * s, -5.2 * s); c.quadraticCurveTo(5.5 * s, -4.4 * s, 7 * s, -5 * s); c.quadraticCurveTo(4 * s, -8.2 * s, 0, -6.6 * s); c.fill(); c.lineWidth = 1.3; c.stroke();
+    c.save(); c.translate(-7 * s, -11.5 * s); c.rotate(-0.5); c.fillStyle = '#E8C9A0'; rr(c, -2.6 * s, -1 * s, 5.2 * s, 2 * s, 0.8 * s); c.fill(); c.stroke(); c.restore();   // bandage
+    c.restore(); c.lineWidth = 2.5; c.strokeStyle = INK;
+    if (!up) drawMop(c, z, m, s, t);
+    c.rotate(wob);   // the shared eyes below sit on the wobbling head
   } else if (z.type === 'coach') {
     c.rotate(wob);
     rr(c, -12 * s, -3 * s, 24 * s, 15 * s, 6 * s); c.fillStyle = '#C8372D'; c.fill(); c.stroke();               // red track suit
@@ -3061,6 +3249,7 @@ function render(dt) {
   drawAmbientUnder(ctx);
   drawCorpses(ctx);
   for (const f of W.features) drawFeature(ctx, f, rtime);
+  drawJanitorFloor(ctx, rtime);
   for (const p of W.pickups) if (!p.taken) drawPickup(ctx, p, rtime);
   // actors sorted by depth (only those on screen)
   const vx0 = camX - 70, vx1 = camX + vw + 70, vy0 = camY - 70, vy1 = camY + vh + 90;
@@ -3360,6 +3549,18 @@ function consume() {
       if (!W.swingHint) { W.swingHint = true; showHint('Out of ammo! Swing your backpack. Zombies you knock out drop more ammo.', 3500); }
       if (!ev.hit) for (let i = 0; i < 3; i++) particles.push({ kind: 'streak', x: W.me.x + Math.cos(ev.a) * 30, y: W.me.y - 4 + Math.sin(ev.a) * 30, vx: Math.cos(ev.a + rand(-0.6, 0.6)) * 160, vy: Math.sin(ev.a + rand(-0.6, 0.6)) * 160, life: 0.12, max: 0.12, c: 'rgba(255,255,255,.7)', r: 1.5, post: true, fr: 0.85 });
     }
+    else if (ev.e === 'vendWhack') {
+      kick(0.18); hitstop = Math.max(hitstop, 0.04);
+      if (ev.left > 0) popups.push({ x: ev.x, y: ev.y - 18, text: ['CLANG!', 'BONK!', 'THUNK!'][Math.floor(Math.random() * 3)], t: 0, life: 0.6, color: '#9FD3E8', size: 14 });
+      rings.push({ x: ev.x, y: ev.y, r0: 4, r1: 24, w: 3, t: 0, dur: 0.2, col: '#9FD3E8' });
+      for (let i = 0; i < 6; i++) particles.push({ kind: 'star', x: ev.x, y: ev.y, vx: rand(-150, 150), vy: rand(-170, 30), life: 0.35, max: 0.35, c: '#F2C230', r: 3.5, post: true, fr: 0.88 });
+    }
+    else if (ev.e === 'mopHit') {
+      kick(0.3); rings.push({ x: ev.x, y: ev.y, r0: 6, r1: 34, w: 4, t: 0, dur: 0.28, col: '#BFE6FF' });
+      for (let i = 0; i < 14; i++) particles.push({ x: ev.x, y: ev.y, vx: rand(-170, 170), vy: rand(-190, 60), life: 0.5, max: 0.5, c: i % 2 ? '#BFE6FF' : '#E8F4FF', r: rand(2, 3.5) });
+    }
+    else if (ev.e === 'mopSwish') { for (let i = 0; i < 6; i++) { const a = rand(0, Math.PI * 2); particles.push({ x: ev.z.x + Math.cos(a) * 30, y: ev.z.y + Math.sin(a) * 30, vx: Math.cos(a) * 90, vy: Math.sin(a) * 90, life: 0.4, max: 0.4, c: '#BFE6FF', r: 2 }); } }
+    else if (ev.e === 'wetFloor') { popups.push({ x: W.me.x, y: W.me.y - 30, text: 'SLIPPERY!', t: 0, life: 0.8, color: '#BFE6FF', size: 13 }); }
     else if (ev.e === 'whack') {
       kick(0.14); hitstop = Math.max(hitstop, 0.04);
       popups.push({ x: ev.z.x, y: ev.z.y - 30, text: ['WHAP!', 'BONK!', 'THWACK!', 'WHUMP!'][Math.floor(Math.random() * 4)], t: 0, life: 0.7, color: '#FFFFFF', size: 14 });
@@ -3393,7 +3594,7 @@ function consume() {
     else if (ev.e === 'summon') { for (let i = 0; i < 16; i++) particles.push({ x: ev.z.x, y: ev.z.y, vx: rand(-120, 120), vy: rand(-120, 120), life: 0.5, max: 0.5, c: '#9BD07A', r: rand(2, 4) }); }
     else if (ev.e === 'bonk') { kick(0.3); popups.push({ x: ev.z.x, y: ev.z.y - 50, text: 'BONK!', t: 0, life: 0.9, color: '#FFFFFF', size: 16 }); }
     else if (ev.e === 'flag') { /* the flag itself is drawn in flight */ }
-    else if (ev.e === 'bite') { flash = 0.4; kick(0.35); hitstop = Math.max(hitstop, 0.06); popups.push({ x: W.me.x, y: W.me.y - 32, text: 'CHOMP!', t: 0, life: 0.8, color: '#FF8A7A', size: 14 }); if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) {} } }
+    else if (ev.e === 'bite') { flash = 0.4; kick(0.35); hitstop = Math.max(hitstop, 0.06); popups.push({ x: W.me.x, y: W.me.y - 32, text: ev.kind === 'mop' ? 'SPLAT!' : 'CHOMP!', t: 0, life: 0.8, color: '#FF8A7A', size: 14 }); if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) {} } }
     else if (ev.e === 'pickup') { popups.push({ x: ev.p.x, y: ev.p.y - 20, text: ev.text, t: 0, life: 1, color: '#F2C230', size: 13 }); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; particles.push({ kind: 'star', x: ev.p.x, y: ev.p.y - 4, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, life: 0.4, max: 0.4, c: '#FFE27A', r: 4, post: true, fr: 0.86 }); } rings.push({ x: ev.p.x, y: ev.p.y - 4, r0: 4, r1: 26, w: 3, t: 0, dur: 0.25, col: '#FFE27A' }); }
     else if (ev.e === 'spot') { if (Math.random() < 0.5) popups.push({ x: ev.z.x, y: ev.z.y - 34, text: 'HRRAAAH!', t: 0, life: 1, color: '#FF8A7A', size: 12 }); }
     else if (ev.e === 'groan') { popups.push({ x: ev.z.x, y: ev.z.y - 30, text: GROANS[Math.floor(Math.random() * GROANS.length)], t: 0, life: 1.4, color: '#B6E89A', size: 10 }); }
@@ -3592,7 +3793,7 @@ function endLevel(win) {
   } else {
     card.innerHTML = `<h2 class="bad">${MAP.car ? 'Wrecked!' : 'You turned!'}</h2><div class="big">Room ${W.zoneSeen.length} / ${MAP.zones.length}</div><p class="small">${MAP.zones[W.zone] ? MAP.zones[W.zone].name : ''}</p>
       ${newW ? `<p>You still keep the <b>${newW}</b>.</p>` : ''}
-      <p class="small">Tip: stand still for accurate shots and back up while you fire. Vending machines are full of snacks, and barrels explode.</p>
+      <p class="small">Tip: stand still for accurate shots and back up while you fire. Vending machines are full of snacks (out of ammo? smash one with your backpack), and barrels explode.</p>
       <button class="btn" id="b1">TRY AGAIN</button><button class="btn alt" id="b2">MENU</button>`;
   }
   overlay.classList.remove('hidden');
@@ -3644,7 +3845,7 @@ function storeLinks() {
 }
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); window.__installEvt = e; if (state === 'menu') showMenu(); });
 window.addEventListener('appinstalled', () => { window.__installEvt = null; if (state === 'menu') showMenu(); });
-window.__zs = { killZombie, zLook, SOLID, zoneAt, makeWorld, step, LEVELS, loadMap, get grid() { return grid; }, get MW() { return MW; }, get MH() { return MH; }, renderMap: () => renderMap(), get mapCanvas() { return mapCanvas; }, grantPower, get W() { return W; }, get ZONE_TILES() { return ZONE_TILES; }, get GATES() { return GATES; }, get EXIT_OPEN() { return EXIT_OPEN; }, get MAP() { return MAP; } };
+window.__zs = { spawnBosses, swing, killZombie, zLook, SOLID, zoneAt, makeWorld, step, LEVELS, loadMap, get grid() { return grid; }, get MW() { return MW; }, get MH() { return MH; }, renderMap: () => renderMap(), get mapCanvas() { return mapCanvas; }, grantPower, get W() { return W; }, get ZONE_TILES() { return ZONE_TILES; }, get GATES() { return GATES; }, get EXIT_OPEN() { return EXIT_OPEN; }, get MAP() { return MAP; } };
 new ResizeObserver(resize).observe(app);
 resize();
 loadMap('school'); renderMap(); initAmbient();
