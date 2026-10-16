@@ -1271,7 +1271,7 @@ function bossThink(w, z, dt) {
       z.t1 = rand(2.4, 3.0) / pace;
       if (d < 400 && los(z.x, z.y - 8, me.x, me.y - 6)) { for (const off of [-0.3, 0, 0.3]) { const a = Math.atan2(dy, dx) + off; w.eshots.push({ kind: 'bone', x: z.x, y: z.y - 10, vx: Math.cos(a) * 240, vy: Math.sin(a) * 240, d: 0, spin: 0, range: 420, r: 7 }); } z.throwT = w.t; }
     }
-    if (z.t3 <= 0) { z.t3 = rand(6, 8) / pace; if (d < 260) { startCharge('BONE ZONE!'); return true; } }
+    if (z.t3 <= 0) { z.t3 = rand(6, 8) / pace; if (d < 260) { startCharge('BOW TO THE KING!'); return true; } }
   } else if (z.type === 'mallcop') {
     if (z.t2 <= 0) { z.t2 = 13 / pace; if (!w.zombies.some(o => o.type === 'mini' && !o.dead)) { summonMinis(w, z, 2, 2); w.events.push({ e: 'bossYell', z, text: 'I NEED BACKUP!' }); } }
     if (z.t3 <= 0) { z.t3 = rand(3.0, 3.8) / pace; if (d < 380) { startCharge(['HALT!', 'FREEZE!', 'NO RUNNING!'][Math.floor(Math.random() * 3)]); z.windup = 0.75; return true; } }
@@ -3972,7 +3972,7 @@ function consume() {
     }
     else if (ev.e === 'vendWhack') {
       kick(0.18); hitstop = Math.max(hitstop, 0.04);
-      if (ev.left > 0) popups.push({ x: ev.x, y: ev.y - 18, text: ['CLANG!', 'BONK!', 'THUNK!'][Math.floor(Math.random() * 3)], t: 0, life: 0.6, color: '#9FD3E8', size: 14 });
+      if (ev.left > 0) popups.push({ x: ev.x, y: ev.y - 18, text: ['CLANG!', 'CLONK!', 'THUNK!'][Math.floor(Math.random() * 3)], t: 0, life: 0.6, color: '#9FD3E8', size: 14 });
       rings.push({ x: ev.x, y: ev.y, r0: 4, r1: 24, w: 3, t: 0, dur: 0.2, col: '#9FD3E8' });
       for (let i = 0; i < 6; i++) particles.push({ kind: 'star', x: ev.x, y: ev.y, vx: rand(-150, 150), vy: rand(-170, 30), life: 0.35, max: 0.35, c: '#F2C230', r: 3.5, post: true, fr: 0.88 });
     }
@@ -4010,7 +4010,7 @@ function consume() {
     else if (ev.e === 'cartCrash') { kick(0.2); popups.push({ x: ev.z.x, y: ev.z.y - 30, text: 'CRASH!', t: 0, life: 0.8, color: '#C9D3DE', size: 15 }); for (let i = 0; i < 8; i++) particles.push({ kind: 'star', x: ev.z.x, y: ev.z.y, vx: rand(-150, 150), vy: rand(-150, 50), life: 0.4, max: 0.4, c: '#FFE27A', r: 3.5, post: true, fr: 0.88 }); }
     else if (ev.e === 'whack') {
       kick(0.14); hitstop = Math.max(hitstop, 0.04);
-      popups.push({ x: ev.z.x, y: ev.z.y - 30, text: ['WHAP!', 'BONK!', 'THWACK!', 'WHUMP!'][Math.floor(Math.random() * 4)], t: 0, life: 0.7, color: '#FFFFFF', size: 14 });
+      popups.push({ x: ev.z.x, y: ev.z.y - 30, text: ['WHAP!', 'CLONK!', 'THWACK!', 'WHUMP!'][Math.floor(Math.random() * 4)], t: 0, life: 0.7, color: '#FFFFFF', size: 14 });
       rings.push({ x: ev.x, y: ev.y, r0: 4, r1: 22, w: 3, t: 0, dur: 0.2, col: '#FFFFFF' });
       for (let i = 0; i < 5; i++) particles.push({ kind: 'star', x: ev.x, y: ev.y, vx: rand(-140, 140), vy: rand(-160, 40), life: 0.35, max: 0.35, c: '#FFE27A', r: 3.5, post: true, fr: 0.88 });
     }
@@ -4039,7 +4039,7 @@ function consume() {
     else if (ev.e === 'bossYell') { popups.push({ x: ev.z.x, y: ev.z.y - ev.z.r * 2.4, text: ev.text, t: 0, life: 1.3, color: '#FF8A7A', size: 15 }); }
     else if (ev.e === 'honk') { kick(0.3); honks.push({ x: ev.z.x, y: ev.z.y, t: 0 }); popups.push({ x: ev.z.x, y: ev.z.y - 60, text: 'HOOONK!', t: 0, life: 1, color: '#F2C230', size: 20 }); }
     else if (ev.e === 'summon') { for (let i = 0; i < 16; i++) particles.push({ x: ev.z.x, y: ev.z.y, vx: rand(-120, 120), vy: rand(-120, 120), life: 0.5, max: 0.5, c: '#9BD07A', r: rand(2, 4) }); }
-    else if (ev.e === 'bonk') { kick(0.3); popups.push({ x: ev.z.x, y: ev.z.y - 50, text: 'BONK!', t: 0, life: 0.9, color: '#FFFFFF', size: 16 }); }
+    else if (ev.e === 'bonk') { kick(0.3); popups.push({ x: ev.z.x, y: ev.z.y - 50, text: 'CLONK!', t: 0, life: 0.9, color: '#FFFFFF', size: 16 }); }
     else if (ev.e === 'flag') { /* the flag itself is drawn in flight */ }
     else if (ev.e === 'bite') { flash = 0.4; kick(0.35); hitstop = Math.max(hitstop, 0.06); popups.push({ x: W.me.x, y: W.me.y - 32, text: ev.kind === 'mop' ? 'SPLAT!' : 'CHOMP!', t: 0, life: 0.8, color: '#FF8A7A', size: 14 }); if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) {} } }
     else if (ev.e === 'pickup') { popups.push({ x: ev.p.x, y: ev.p.y - 20, text: ev.text, t: 0, life: 1, color: '#F2C230', size: 13 }); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; particles.push({ kind: 'star', x: ev.p.x, y: ev.p.y - 4, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, life: 0.4, max: 0.4, c: '#FFE27A', r: 4, post: true, fr: 0.86 }); } rings.push({ x: ev.p.x, y: ev.p.y - 4, r0: 4, r1: 26, w: 3, t: 0, dur: 0.25, col: '#FFE27A' }); }
