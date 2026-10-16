@@ -1264,14 +1264,14 @@ function bossThink(w, z, dt) {
       z.t2 = 8 / pace;
       if (w.zombies.filter(o => o.type === 'skeleton' && !o.dead && o.zone === z.zone).length <= 3) {
         summonMinis(w, z, 3, 7, 'skeleton'); z.raiseT = w.t;
-        w.events.push({ e: 'bossYell', z, text: ['RISE, MY ARMY!', 'ARISE!', 'BONES, ATTACK!'][Math.floor(Math.random() * 3)] }); w.events.push({ e: 'raise', z });
+        w.events.push({ e: 'bossYell', z, text: ['WAKE UP, BONES!', "GET 'EM, BONES!", 'BONES, ATTACK!'][Math.floor(Math.random() * 3)] }); w.events.push({ e: 'raise', z });
       }
     }
     if (z.t1 <= 0) {
       z.t1 = rand(2.4, 3.0) / pace;
       if (d < 400 && los(z.x, z.y - 8, me.x, me.y - 6)) { for (const off of [-0.3, 0, 0.3]) { const a = Math.atan2(dy, dx) + off; w.eshots.push({ kind: 'bone', x: z.x, y: z.y - 10, vx: Math.cos(a) * 240, vy: Math.sin(a) * 240, d: 0, spin: 0, range: 420, r: 7 }); } z.throwT = w.t; }
     }
-    if (z.t3 <= 0) { z.t3 = rand(6, 8) / pace; if (d < 260) { startCharge('BOW TO THE KING!'); return true; } }
+    if (z.t3 <= 0) { z.t3 = rand(6, 8) / pace; if (d < 260) { startCharge('HERE I COME!'); return true; } }
   } else if (z.type === 'mallcop') {
     if (z.t2 <= 0) { z.t2 = 13 / pace; if (!w.zombies.some(o => o.type === 'mini' && !o.dead)) { summonMinis(w, z, 2, 2); w.events.push({ e: 'bossYell', z, text: 'I NEED BACKUP!' }); } }
     if (z.t3 <= 0) { z.t3 = rand(3.0, 3.8) / pace; if (d < 380) { startCharge(['HALT!', 'FREEZE!', 'NO RUNNING!'][Math.floor(Math.random() * 3)]); z.windup = 0.75; return true; } }
